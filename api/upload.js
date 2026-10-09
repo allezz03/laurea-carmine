@@ -11,9 +11,11 @@ export default async function handler(req, res) {
   let fileBuffer = null;
   let mimeType = "";
   let tooLarge = false;
+  let eventName = "Festa";
   try {
     await new Promise((resolve, reject) => {
       const bb = Busboy({ headers: req.headers, limits: { files: 1, fileSize: MAX_BYTES } });
+      bb.on("field", (name, value) => { if (name === "event" && ["Cena", "Festa"].includes(value)) eventName = value; });
       bb.on("file", (_name, stream, info) => {
         mimeType = info.mimeType;
         const chunks = [];
@@ -35,7 +37,7 @@ export default async function handler(req, res) {
     const path = `${id}.${ext}`;
     const { error: uploadError } = await supabase.storage.from("laurea-photos").upload(path, fileBuffer, { contentType: mimeType, upsert: false });
     if (uploadError) throw uploadError;
-    const { error: dbError } = await supabase.from("photos").insert({ id, storage_path: path, status: "pending", mime_type: mimeType, size_bytes: fileBuffer.length });
+    const { error: dbError } = await supabase.from("photos").insert({ id, storage_path: path, status: "pending", mime_type: mimeType, size_bytes: fileBuffer.length, event: eventName });
     if (dbError) {
       await supabase.storage.from("laurea-photos").remove([path]);
       throw dbError;

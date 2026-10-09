@@ -6,6 +6,7 @@ create table if not exists public.photos (
   id uuid primary key,
   storage_path text not null unique,
   status text not null default 'pending' check (status in ('pending', 'approved')),
+  event text not null default 'Festa' check (event in ('Cena', 'Festa')),
   mime_type text not null,
   size_bytes bigint not null check (size_bytes > 0 and size_bytes <= 12582912),
   created_at timestamptz not null default now(),
