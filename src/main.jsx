@@ -243,12 +243,19 @@ function App() {
       <p className="hero-subtitle">Album {selectedEvent} · Una serata, mille ricordi.</p>
       <div className="hero-rule"><span></span><Heart size={15} fill="currentColor"/><span></span></div>
       <p className="hero-copy">Scatta, condividi e rivivi i momenti più belli.<br/>Carica qui le tue foto: dopo una rapida approvazione, saranno visibili a tutti.</p>
-      <label className={`upload-button ${busy ? "is-busy" : ""}`}>
-        {busy ? <RefreshCw className="spin" size={20}/> : <Camera size={20}/>}
-        <span>{busy ? "Caricamento in corso…" : "Condividi le tue foto"}</span>
-        <input type="file" accept="image/*" multiple capture="environment" disabled={busy} onChange={e => { uploadFiles(e.target.files); e.target.value = ""; }}/>
-      </label>
-      <p className="upload-hint"><LockKeyhole size={13}/> Le foto vengono pubblicate solo dopo approvazione.</p>
+      <div className="upload-options">
+        <label className={`upload-button ${busy ? "is-busy" : ""}`}>
+          {busy ? <RefreshCw className="spin" size={20}/> : <Camera size={20}/>}
+          <span>{busy ? "Caricamento in corso…" : "Scatta una foto"}</span>
+          <input type="file" accept="image/*" capture="environment" disabled={busy} onChange={e => { uploadFiles(e.target.files); e.target.value = ""; }}/>
+        </label>
+        <label className={`upload-button upload-button-secondary ${busy ? "is-busy" : ""}`}>
+          <Images size={20}/>
+          <span>Scegli dalla galleria</span>
+          <input type="file" accept="image/*" multiple disabled={busy} onChange={e => { uploadFiles(e.target.files); e.target.value = ""; }}/>
+        </label>
+      </div>
+      <p className="upload-hint"><Camera size={13}/> Scatta una nuova foto oppure selezionane una o più dalla galleria.</p><p className="upload-hint"><LockKeyhole size={13}/> Le foto vengono pubblicate solo dopo approvazione.</p>
       {notice && <div className="notice hero-notice" role="status">{notice}</div>}
       <a href="#album" className="scroll-link">SCOPRI L'ALBUM <span>↓</span></a>
     </section>
@@ -275,7 +282,7 @@ function App() {
 
     <section className="share-section"><div className="share-card"><div><span className="eyebrow">INVITA I TUOI RICORDI</span><h2>Condividi il momento.</h2><p>Inquadra il QR code per aprire l'album {selectedEvent} da un altro telefono.</p></div><div className="qr-frame"><QRCodeSVG value={`${APP_URL}/?evento=${encodeURIComponent(selectedEvent)}`} size={130} bgColor="#fffaf3" fgColor="#651d32" level="M" includeMargin/></div></div></section>
     <footer className="footer"><span className="footer-mark">C</span><p>Fatto con <Heart size={13} fill="currentColor"/> per Carmine</p><a className="organizer-link" href="/organizzatore"><LockKeyhole size={13}/> Area organizzatore</a><span className="footer-small">UN RICORDO DA CONSERVARE</span></footer>
-    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi" onClick={() => setSelected(null)}><X/></button><img src={selected.url} alt="Foto della laurea" onClick={e => e.stopPropagation()}/><p className="save-photo-hint" onClick={e => e.stopPropagation()}>Su iPhone, nel menu Condividi scorri le opzioni e tocca “Salva immagine”.</p><button className="download-photo" onClick={e => { e.stopPropagation(); savePhotoToDevice(selected); }}><Share size={16}/> Salva in Foto</button></div>}
+    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi anteprima" title="Chiudi anteprima" onClick={() => setSelected(null)}><X size={24}/></button><img src={selected.url} alt="Foto della laurea" onClick={e => e.stopPropagation()}/><p className="save-photo-hint" onClick={e => e.stopPropagation()}>Su iPhone, nel menu Condividi scorri le opzioni e tocca “Salva immagine”.</p><button className="download-photo" onClick={e => { e.stopPropagation(); savePhotoToDevice(selected); }}><Share size={16}/> Salva in Foto</button></div>}
   </main>;
 }
 

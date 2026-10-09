@@ -69,3 +69,11 @@ Nella galleria, scegli **Seleziona foto da scaricare**, seleziona una o più imm
 
 
 **Salvataggio multiplo su iPhone:** seleziona le foto e premi “Salva foto selezionate”. Se Safari supporta la condivisione di più file, si apre il menu nativo iOS; scegli “Salva immagini” per salvarle in Foto senza ZIP. Il sito non può salvare automaticamente nel rullino senza conferma dell’utente.
+
+
+### Selezione foto dal telefono
+Il pulsante di caricamento apre il selettore immagini del dispositivo e permette di scegliere una o più foto dalla galleria. Nell’anteprima di una foto è presente una X ben visibile in alto a destra per chiuderla.
+
+
+### Caricamento foto
+La homepage offre due scelte: **Scatta una foto** (richiede il supporto del browser per `capture="environment"`) e **Scegli dalla galleria** (consente la selezione multipla). Su alcuni dispositivi il browser può comunque mostrare un selettore di sistema invece di aprire direttamente la fotocamera.
