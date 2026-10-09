@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import JSZip from "jszip";
 import { createRoot } from "react-dom/client";
 import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, ArrowLeft, Utensils, PartyPopper } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -77,35 +76,48 @@ function App() {
   async function downloadSelectedPhotos() {
     const chosen = photos.filter(photo => selectedPhotoIds.includes(photo.id));
     if (!chosen.length) {
-      setNotice("Seleziona almeno una foto da scaricare.");
+      setNotice("Seleziona almeno una foto da salvare.");
       return;
     }
     setBulkBusy(true);
-    setNotice("Preparo il pacchetto di foto…");
     try {
-      const zip = new JSZip();
+      const files = [];
       for (let i = 0; i < chosen.length; i++) {
         const photo = chosen[i];
+        setNotice(`Preparo la foto ${i + 1} di ${chosen.length}…`);
         const response = await fetch(`/api/download?id=${encodeURIComponent(photo.id)}`);
-        if (!response.ok) throw new Error("Non è stato possibile scaricare una delle foto selezionate.");
+        if (!response.ok) throw new Error(`Non è stato possibile preparare la foto ${i + 1}.`);
         const blob = await response.blob();
-        const extension = (blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg").replace("heic", "heic");
-        zip.file(`laurea-carmine-${(selectedEvent || "foto").toLowerCase()}-${i + 1}.${extension}`, blob);
+        const mime = blob.type || "image/jpeg";
+        const subtype = (mime.split("/")[1] || "jpeg").split(";")[0];
+        const extension = subtype === "jpeg" ? "jpg" : subtype;
+        files.push(new File([blob], `laurea-carmine-${(photo.event || selectedEvent || "foto").toLowerCase()}-${photo.id}.${extension}`, { type: mime }));
       }
-      const archive = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(archive);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `laurea-carmine-${(selectedEvent || "foto").toLowerCase()}-foto.zip`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      setNotice("Download pronto! Se usi iPhone, apri il file ZIP da File e scegli le foto da salvare in Foto.");
+
+      // On iPhone, share all selected image files together so iOS can offer
+      // its native "Save Images" action in Photos, without a ZIP or Files app.
+      if (navigator.share && navigator.canShare && navigator.canShare({ files })) {
+        await navigator.share({ files, title: "Laurea di Carmine", text: "Foto della laurea di Carmine" });
+        setNotice("Seleziona “Salva immagini” nel menu di condivisione per salvarle in Foto.");
+      } else {
+        // Fallback for browsers without multi-file sharing support.
+        for (const file of files) {
+          const url = URL.createObjectURL(file);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = file.name;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+        }
+        setNotice("Il browser non supporta il salvataggio condiviso di più immagini: sono state avviate le singole foto.");
+      }
       setSelectionMode(false);
       setSelectedPhotoIds([]);
     } catch (error) {
-      setNotice(error?.message || "Non è stato possibile preparare il download.");
+      if (error?.name === "AbortError") return;
+      setNotice(error?.message || "Non è stato possibile preparare le foto selezionate. Riprova.");
     } finally {
       setBulkBusy(false);
     }
@@ -248,7 +260,7 @@ function App() {
           {!selectionMode ? <button className="secondary" onClick={() => { setSelectionMode(true); setSelectedPhotoIds([]); }}><Check size={16}/> Seleziona foto da scaricare</button> : <>
             <span>{selectedPhotoIds.length} selezionate</span>
             <button className="secondary" onClick={() => setSelectedPhotoIds(photos.map(p => p.id))}>Seleziona tutte</button>
-            <button className="primary" disabled={bulkBusy || selectedPhotoIds.length === 0} onClick={downloadSelectedPhotos}><Download size={16}/>{bulkBusy ? "Preparo…" : "Scarica selezionate"}</button>
+            <button className="primary" disabled={bulkBusy || selectedPhotoIds.length === 0} onClick={downloadSelectedPhotos}><Download size={16}/>{bulkBusy ? "Scarico…" : "Salva foto selezionate"}</button>
             <button className="text-button" onClick={() => { setSelectionMode(false); setSelectedPhotoIds([]); }}>Annulla</button>
           </>}
         </div>

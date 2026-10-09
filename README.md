@@ -65,4 +65,7 @@ Il pulsante nella visualizzazione della foto usa la condivisione nativa del brow
 
 
 ## Download multiplo delle foto
-Nella galleria, scegli **Seleziona foto da scaricare**, seleziona una o più immagini e premi **Scarica selezionate**. Il sito prepara un archivio ZIP scaricabile. Su iPhone, apri lo ZIP nell'app File e, se necessario, estrailo prima di salvare le immagini in Foto. Nel dettaglio della singola foto, le istruzioni per iPhone sono visualizzate sopra il pulsante **Salva in Foto**.
+Nella galleria, scegli **Seleziona foto da scaricare**, seleziona una o più immagini e premi **Salva foto selezionate**. Il sito scarica ogni immagine come file separato, senza creare un archivio ZIP. Alcuni browser possono chiedere di autorizzare i download multipli; su iPhone il comportamento dipende dal browser utilizzato. Nel dettaglio della singola foto, le istruzioni per iPhone sono visualizzate sopra il pulsante **Salva in Foto**.
+
+
+**Salvataggio multiplo su iPhone:** seleziona le foto e premi “Salva foto selezionate”. Se Safari supporta la condivisione di più file, si apre il menu nativo iOS; scegli “Salva immagini” per salvarle in Foto senza ZIP. Il sito non può salvare automaticamente nel rullino senza conferma dell’utente.
