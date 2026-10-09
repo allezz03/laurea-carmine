@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, ArrowLeft, Utensils, PartyPopper } from "lucide-react";
+import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, ArrowLeft, Utensils, PartyPopper } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import "./styles.css";
 
@@ -28,6 +28,42 @@ function App() {
       if (response.ok) setPhotos(data.photos || []);
     } catch { /* network can be temporarily unavailable */ }
   }
+  async function savePhotoToDevice(photo) {
+    const fileName = `laurea-carmine-${(photo.event || selectedEvent || "foto").toLowerCase()}-${photo.id}.jpg`;
+    const downloadUrl = `/api/download?id=${encodeURIComponent(photo.id)}`;
+    try {
+      // On iPhone/iPad and supported Android browsers, share the actual image file.
+      // The native share sheet lets the guest choose "Save Image" / "Save to Photos".
+      if (navigator.share && navigator.canShare && typeof File !== "undefined") {
+        const response = await fetch(downloadUrl);
+        if (!response.ok) throw new Error("Non riesco a preparare la foto. Riprova.");
+        const blob = await response.blob();
+        const file = new File([blob], fileName, { type: blob.type || "image/jpeg" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: "Laurea di Carmine", text: "Un ricordo della laurea di Carmine" });
+          return;
+        }
+      }
+      // Fallback for browsers that do not support sharing files.
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      if (error?.name === "AbortError") return; // User closed the share sheet.
+      setNotice(error?.message || "Non è stato possibile preparare la foto.");
+      // If native sharing failed for a reason other than cancellation, still offer download.
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+  }
+
   async function loadPending(password = adminPassword) {
     const response = await fetch("/api/admin/photos", { headers: { "x-admin-password": password } });
     const data = await response.json();
@@ -167,7 +203,7 @@ function App() {
 
     <section className="share-section"><div className="share-card"><div><span className="eyebrow">INVITA I TUOI RICORDI</span><h2>Condividi il momento.</h2><p>Inquadra il QR code per aprire l'album {selectedEvent} da un altro telefono.</p></div><div className="qr-frame"><QRCodeSVG value={`${APP_URL}/?evento=${encodeURIComponent(selectedEvent)}`} size={130} bgColor="#fffaf3" fgColor="#651d32" level="M" includeMargin/></div></div></section>
     <footer className="footer"><span className="footer-mark">C</span><p>Fatto con <Heart size={13} fill="currentColor"/> per Carmine</p><a className="organizer-link" href="/organizzatore"><LockKeyhole size={13}/> Area organizzatore</a><span className="footer-small">UN RICORDO DA CONSERVARE</span></footer>
-    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi" onClick={() => setSelected(null)}><X/></button><img src={selected.url} alt="Foto della laurea" onClick={e => e.stopPropagation()}/><a className="download-photo" href={`/api/download?id=${encodeURIComponent(selected.id)}`} download={`laurea-carmine-${selected.event || "foto"}-${selected.id}.jpg`}><Download size={16}/> Scarica foto</a></div>}
+    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi" onClick={() => setSelected(null)}><X/></button><img src={selected.url} alt="Foto della laurea" onClick={e => e.stopPropagation()}/><button className="download-photo" onClick={e => { e.stopPropagation(); savePhotoToDevice(selected); }}><Share size={16}/> Salva in Foto</button><p className="save-photo-hint" onClick={e => e.stopPropagation()}>Su iPhone, scegli “Salva immagine” nel menu Condividi.</p></div>}
   </main>;
 }
 

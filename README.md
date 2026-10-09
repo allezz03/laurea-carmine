@@ -58,3 +58,7 @@ Per un database già esistente, eseguire una sola volta `supabase_migration_cena
 
 ## Download foto su smartphone
 Il pulsante “Scarica foto” usa `/api/download?id=...`: il server controlla che la foto sia approvata e la invia come allegato (`Content-Disposition: attachment`), così i browser mobili gestiscono il salvataggio in modo più affidabile rispetto al link diretto a Supabase.
+
+
+## Salvataggio delle foto su smartphone
+Il pulsante nella visualizzazione della foto usa la condivisione nativa del browser quando supporta la condivisione di file. Su iPhone, nel menu Condividi l'utente può scegliere **Salva immagine** per aggiungerla a Foto. Nei browser non compatibili viene avviato il download classico. Per motivi di privacy, il sito non può salvare automaticamente nel rullino senza un'azione dell'utente.
