@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, ArrowLeft, Utensils, PartyPopper } from "lucide-react";
+import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, ArrowLeft, Utensils, PartyPopper, Video, Play } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import "./styles.css";
 
@@ -28,6 +28,9 @@ function App() {
   const [preparedFiles, setPreparedFiles] = useState([]);
   const [preparedPhotoIds, setPreparedPhotoIds] = useState([]);
   const [uploadQueue, setUploadQueue] = useState([]);
+  const [videoDraft, setVideoDraft] = useState(null);
+  const [videoCaption, setVideoCaption] = useState("");
+  const [videoBusy, setVideoBusy] = useState(false);
 
   async function loadGallery(eventName = selectedEvent) {
     if (!eventName) { setPhotos([]); return; }
@@ -110,7 +113,7 @@ function App() {
       return;
     }
 
-    const chosen = photos.filter(photo => selectedPhotoIds.includes(photo.id));
+    const chosen = photos.filter(photo => photo.media_type !== "video" && selectedPhotoIds.includes(photo.id));
     if (!chosen.length) {
       setNotice("Seleziona almeno una foto da salvare.");
       return;
@@ -160,6 +163,64 @@ function App() {
     } finally {
       setBulkBusy(false);
     }
+  }
+
+  function chooseVideo(fileList) {
+    const file = Array.from(fileList || [])[0];
+    if (!file) return;
+    const allowed = ["video/mp4", "video/quicktime", "video/webm"];
+    if (!allowed.includes(file.type)) { setNotice("Formato non supportato. Scegli un video MP4, MOV o WebM."); return; }
+    if (file.size > 50 * 1024 * 1024) { setNotice("Il video deve pesare al massimo 50 MB."); return; }
+    const preview = document.createElement("video");
+    preview.preload = "metadata";
+    preview.onloadedmetadata = () => {
+      URL.revokeObjectURL(preview.src);
+      if (!Number.isFinite(preview.duration) || preview.duration > 180) {
+        setNotice("Il video deve durare al massimo 3 minuti.");
+        return;
+      }
+      setVideoDraft({ file, previewUrl: URL.createObjectURL(file), duration: preview.duration });
+      setVideoCaption("");
+    };
+    preview.onerror = () => { URL.revokeObjectURL(preview.src); setNotice("Non riesco a leggere questo video. Prova con un file MP4 o MOV."); };
+    preview.src = URL.createObjectURL(file);
+  }
+
+  function closeVideoDraft() {
+    if (videoDraft?.previewUrl) URL.revokeObjectURL(videoDraft.previewUrl);
+    setVideoDraft(null);
+    setVideoCaption("");
+  }
+
+  async function submitVideo() {
+    if (!videoDraft || videoBusy) return;
+    setVideoBusy(true);
+    try {
+      setNotice("Preparo il caricamento sicuro del video…");
+      const request = await fetch("/api/video-upload-url", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: selectedEvent || "Festa", mimeType: videoDraft.file.type, size: videoDraft.file.size, caption: videoCaption })
+      });
+      const uploadInfo = await request.json();
+      if (!request.ok) throw new Error(uploadInfo.error || "Non è stato possibile preparare il video.");
+      setNotice("Caricamento video in corso… non chiudere la pagina.");
+      const uploaded = await fetch(uploadInfo.signedUrl, { method: "PUT", headers: { "Content-Type": videoDraft.file.type, "x-upsert": "false" }, body: videoDraft.file });
+      if (!uploaded.ok) {
+        const detail = await uploaded.text().catch(() => "");
+        throw new Error(detail.includes("Payload Too Large") ? "Il video supera il limite consentito da Supabase Storage." : "Caricamento del video non riuscito. Controlla la connessione e riprova.");
+      }
+      const completed = await fetch("/api/video-upload-complete", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: uploadInfo.id, path: uploadInfo.path, event: uploadInfo.event, mimeType: uploadInfo.mimeType, size: uploadInfo.size, caption: uploadInfo.caption })
+      });
+      const result = await completed.json();
+      if (!completed.ok) throw new Error(result.error || "Video caricato ma non registrato. Contatta l'organizzatore.");
+      closeVideoDraft();
+      setNotice(result.status === "approved" ? "Video caricato e pubblicato nell'album!" : "Video inviato! Comparirà nell'album dopo l'approvazione.");
+      await loadGallery();
+    } catch (error) {
+      setNotice(error?.message || "Non è stato possibile caricare il video.");
+    } finally { setVideoBusy(false); }
   }
 
   async function loadPending(password = adminPassword) {
@@ -312,7 +373,7 @@ function App() {
     return <main className="admin-shell">
       <header className="admin-top"><a className="brand" href="/"><span className="brand-mark">C</span><span>LAUREA DI <b>CARMINE</b></span></a><span className="admin-label"><LockKeyhole size={15}/> Area organizzatore</span></header>
       <section className="admin-card">
-        <span className="eyebrow">AREA RISERVATA</span><h1>Approva i ricordi</h1><p className="muted">Le foto inviate dagli invitati restano private finché non le approvi.</p>
+        <span className="eyebrow">AREA RISERVATA</span><h1>Approva i ricordi</h1><p className="muted">Foto e video inviati dagli invitati restano privati finché non li approvi.</p>
         {!authenticated ? <form onSubmit={async e => { e.preventDefault(); try { await loadPending(); setNotice(""); } catch (err) { setNotice(err.message); } }}>
           <label htmlFor="adminPassword">Password organizzatore</label>
           <input id="adminPassword" type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} autoComplete="current-password" required placeholder="Inserisci la password" />
@@ -323,14 +384,14 @@ function App() {
             <button className={reviewEnabled ? "secondary" : "primary"} disabled={adminBusy} onClick={toggleReview}>{reviewEnabled ? "Disattiva revisione" : "Attiva revisione"}</button>
           </div>
           <div className="pending-head"><b>{pending.length} foto in attesa di approvazione</b><button className="icon-button" onClick={() => loadPending().catch(e => setNotice(e.message))} aria-label="Aggiorna"><RefreshCw size={17}/></button></div>
-          {pending.length === 0 ? <div className="empty"><ShieldCheck size={32}/><b>Tutto aggiornato</b><span>Non ci sono foto da approvare.</span></div> :
+          {pending.length === 0 ? <div className="empty"><ShieldCheck size={32}/><b>Tutto aggiornato</b><span>Non ci sono contenuti da approvare.</span></div> :
             <div className="pending-grid">{pending.map(p => <article className="pending-item" key={p.id}>
-              <img src={p.url} alt="Foto in attesa di approvazione"/>
+              {p.media_type === "video" ? <video src={p.url} controls playsInline preload="metadata" aria-label="Video in attesa di approvazione"/> : <img src={p.url} alt="Foto in attesa di approvazione"/>}
               <div className="photo-event-tag">{p.event}</div>
               <div className="pending-actions"><button className="approve" disabled={adminBusy} onClick={() => moderate(p.id, "approve")}><Check size={16}/> Approva</button><button className="reject" disabled={adminBusy} onClick={() => moderate(p.id, "reject")}><X size={16}/> Rifiuta</button></div>
             </article>)}</div>}
-          <div className="pending-head published-head"><b>Foto già pubblicate ({approved.length})</b></div>
-          <p className="muted admin-help">Seleziona una o più foto per eliminarle insieme dall'album condiviso.</p>
+          <div className="pending-head published-head"><b>Contenuti già pubblicati ({approved.length})</b></div>
+          <p className="muted admin-help">Seleziona una o più foto o video per eliminarli insieme dall'album condiviso.</p>
           {approved.length === 0 ? <div className="empty"><Images size={30}/><b>Nessuna foto pubblicata</b><span>Le foto approvate compariranno qui.</span></div> : <>
             <div className="bulk-delete-toolbar">
               <button className="secondary" disabled={adminBusy} onClick={toggleSelectAllApproved}>{approved.length > 0 && approved.every(photo => selectedDeleteIds.includes(photo.id)) ? "Deseleziona tutte" : "Seleziona tutto"}</button>
@@ -341,7 +402,7 @@ function App() {
               const isChosen = selectedDeleteIds.includes(p.id);
               return <article className={`pending-item ${isChosen ? "pending-item-selected" : ""}`} key={p.id}>
                 <button type="button" className={`admin-photo-select ${isChosen ? "is-selected" : ""}`} aria-pressed={isChosen} aria-label={isChosen ? "Deseleziona foto" : "Seleziona foto"} onClick={() => toggleDeleteSelection(p.id)} disabled={adminBusy}>
-                  <img src={p.url} alt="Foto già pubblicata"/><span className="admin-photo-check">{isChosen ? "✓" : ""}</span>
+                  {p.media_type === "video" ? <video src={p.url} muted playsInline preload="metadata"/> : <img src={p.url} alt="Foto già pubblicata"/>}<span className="admin-photo-check">{isChosen ? "✓" : ""}</span>
                 </button>
                 <div className="photo-event-tag">{p.event}</div>
                 <div className="pending-actions"><button className="reject delete-photo" disabled={adminBusy} onClick={() => { if (window.confirm("Vuoi eliminare definitivamente questa foto?")) moderate(p.id, "delete"); }}><Trash2 size={16}/> Elimina</button></div>
@@ -352,7 +413,7 @@ function App() {
         </>}
         {notice && <p className="notice" role="status">{notice}</p>}
       </section>
-      <footer>Le foto approvate diventano visibili nell'album condiviso.</footer>
+      <footer>I contenuti approvati diventano visibili nell'album condiviso.</footer>
     </main>;
   }
 
@@ -395,8 +456,12 @@ function App() {
           <span>Scegli dalla galleria</span>
           <input type="file" accept="image/*" multiple disabled={busy} onChange={e => { uploadFiles(e.target.files); e.target.value = ""; }}/>
         </label>
+        <label className={`upload-button ${videoBusy ? "is-busy" : ""}`}>
+          <Video size={20}/><span>Carica un video</span>
+          <input type="file" accept="video/mp4,video/quicktime,video/webm" capture="environment" disabled={busy || videoBusy} onChange={e => { chooseVideo(e.target.files); e.target.value = ""; }}/>
+        </label>
       </div>
-      <p className="upload-hint"><Camera size={13}/> Scatta una nuova foto oppure selezionane una o più dalla galleria.</p><p className="upload-hint"><LockKeyhole size={13}/> {reviewEnabled ? "Le foto vengono pubblicate solo dopo approvazione." : "La revisione è disattivata: le foto saranno pubblicate subito."}</p>
+      <p className="upload-hint"><Camera size={13}/> Scatta una nuova foto, seleziona immagini dalla galleria oppure aggiungi un video fino a 3 minuti.</p><p className="upload-hint"><LockKeyhole size={13}/> {reviewEnabled ? "Le foto vengono pubblicate solo dopo approvazione." : "La revisione è disattivata: le foto saranno pubblicate subito."}</p>
       {notice && <div className="notice hero-notice" role="status">{notice}</div>}
       <a href="#album" className="scroll-link">SCOPRI L'ALBUM <span>↓</span></a>
     </section>
@@ -407,13 +472,13 @@ function App() {
         <div className="bulk-toolbar">
           {!selectionMode ? <button className="secondary" onClick={() => { setSelectionMode(true); setSelectedPhotoIds([]); }}><Check size={16}/> Seleziona foto da scaricare</button> : <>
             <span>{selectedPhotoIds.length} selezionate</span>
-            <button className="secondary" onClick={() => setSelectedPhotoIds(photos.map(p => p.id))}>Seleziona tutte</button>
+            <button className="secondary" onClick={() => setSelectedPhotoIds(photos.filter(p => p.media_type !== "video").map(p => p.id))}>Seleziona tutte</button>
             <button className="primary" disabled={bulkBusy || selectedPhotoIds.length === 0} onClick={downloadSelectedPhotos}><Download size={16}/>{bulkBusy ? "Preparo…" : preparedFiles.length ? `Condividi ${preparedFiles.length} foto` : "Prepara foto selezionate"}</button>
             <button className="text-button" onClick={() => { setSelectionMode(false); setSelectedPhotoIds([]); }}>Annulla</button>
           </>}
         </div>
-        <div className="photo-grid">{photos.map((photo, i) => <button className={`photo-tile ${selectionMode && selectedPhotoIds.includes(photo.id) ? "is-selected" : ""}`} key={photo.id} onClick={() => selectionMode ? togglePhotoSelection(photo) : setSelected(photo)} aria-label={selectionMode ? `Seleziona foto ${i+1}` : `Apri foto ${i+1}`}>
-          <span className="polaroid-image"><img src={photo.url} alt={`Ricordo della laurea di Carmine ${i+1}`} loading="lazy"/>
+        <div className="photo-grid">{photos.map((photo, i) => <button className={`photo-tile ${selectionMode && selectedPhotoIds.includes(photo.id) ? "is-selected" : ""}`} key={photo.id} onClick={() => selectionMode ? (photo.media_type === "video" ? setNotice("Il download multiplo è disponibile per le foto; i video si possono aprire e scaricare singolarmente.") : togglePhotoSelection(photo)) : setSelected(photo)} aria-label={selectionMode ? `Seleziona contenuto ${i+1}` : `Apri contenuto ${i+1}`}>
+          <span className={`polaroid-image ${photo.media_type === "video" ? "video-thumb" : ""}`}>{photo.media_type === "video" ? <><video src={photo.url} preload="metadata" muted playsInline/><span className="video-play"><Play size={28} fill="currentColor"/></span></> : <img src={photo.url} alt={`Ricordo della laurea di Carmine ${i+1}`} loading="lazy"/>}
           {selectionMode ? <span className="selection-mark">{selectedPhotoIds.includes(photo.id) ? <Check size={19}/> : null}</span> : <span className="photo-overlay"><Heart size={18}/></span>}</span>
           <span className={`polaroid-caption ${photo.caption ? "has-caption" : ""}`}>{photo.caption || "Un ricordo da conservare"}</span>
         </button>)}</div>
@@ -426,7 +491,8 @@ function App() {
     <footer className="footer"><span className="footer-mark">C</span><p>Fatto con <Heart size={13} fill="currentColor"/> per Carmine</p><a className="organizer-link" href="/organizzatore"><LockKeyhole size={13}/> Area organizzatore</a><span className="footer-small">UN RICORDO DA CONSERVARE</span></footer>
     {showQrZoom && <div className="qr-modal-backdrop" role="dialog" aria-modal="true" aria-label="Codice QR ingrandito" onClick={() => setShowQrZoom(false)}><section className="qr-modal" onClick={e => e.stopPropagation()}><button className="close-qr-modal" onClick={() => setShowQrZoom(false)} aria-label="Chiudi codice QR" title="Chiudi"><X size={23}/></button><span className="eyebrow">CONDIVIDI L'ALBUM {selectedEvent.toUpperCase()}</span><h2>Inquadra il codice QR</h2><div className="qr-frame qr-frame-large"><QRCodeSVG value={`${APP_URL}/?evento=${encodeURIComponent(selectedEvent)}`} size={280} bgColor="#fffaf3" fgColor="#651d32" level="M" includeMargin/></div><p>Apri la fotocamera del telefono e inquadra il codice per accedere all'album.</p></section></div>}
     {uploadQueue.length > 0 && <div className="upload-modal-backdrop" role="dialog" aria-modal="true" aria-label="Aggiungi didascalie alle foto"><section className="upload-modal"><button className="close-upload-modal" disabled={busy} onClick={closeUploadQueue} aria-label="Chiudi" title="Chiudi"><X size={21}/></button><span className="eyebrow"><Images size={14}/> I TUOI RICORDI</span><h2>Aggiungi una dedica</h2><p className="muted">Scrivi una frase sotto ogni foto, proprio come su una Polaroid. È facoltativo.</p><div className="caption-queue">{uploadQueue.map((item, index) => <article className="caption-queue-item" key={`${item.file.name}-${index}`}><img src={item.preview} alt={`Anteprima foto ${index + 1}`}/><div><label htmlFor={`caption-${index}`}>Didascalia {uploadQueue.length > 1 ? index + 1 : ""}</label><textarea id={`caption-${index}`} maxLength={180} value={item.caption} disabled={busy} onChange={e => updateUploadCaption(index, e.target.value)} placeholder="Es. Una serata indimenticabile!"/><small>{item.caption.length}/180</small></div></article>)}</div><div className="upload-modal-actions"><button className="secondary" disabled={busy} onClick={closeUploadQueue}>Annulla</button><button className="primary" disabled={busy} onClick={submitUploadQueue}>{busy ? "Caricamento…" : `Carica ${uploadQueue.length} ${uploadQueue.length === 1 ? "foto" : "foto"}`}</button></div></section></div>}
-    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi anteprima" title="Chiudi anteprima" onClick={() => setSelected(null)}><X size={24}/></button><div className="lightbox-polaroid" onClick={e => e.stopPropagation()}><img src={selected.url} alt="Foto della laurea"/><div className="lightbox-caption">{selected.caption || "Un ricordo da conservare"}</div></div><p className="save-photo-hint" onClick={e => e.stopPropagation()}>Su iPhone, nel menu Condividi scorri le opzioni e tocca “Salva immagine”.</p><button className="download-photo" onClick={e => { e.stopPropagation(); savePhotoToDevice(selected); }}><Share size={16}/> Salva in Foto</button></div>}
+    {videoDraft && <div className="upload-modal-backdrop" role="dialog" aria-modal="true" aria-label="Aggiungi un video"><section className="upload-modal"><button className="close-upload-modal" disabled={videoBusy} onClick={closeVideoDraft} aria-label="Chiudi" title="Chiudi"><X size={21}/></button><span className="eyebrow"><Video size={14}/> I TUOI RICORDI</span><h2>Aggiungi un video</h2><p className="muted">Massimo 3 minuti e 50 MB. Per mantenere un buon equilibrio tra qualità e spazio, consigliamo video in HD e compressi dal telefono.</p><video className="video-draft-preview" src={videoDraft.previewUrl} controls playsInline/><label htmlFor="video-caption">Didascalia facoltativa</label><textarea id="video-caption" maxLength={180} value={videoCaption} disabled={videoBusy} onChange={e => setVideoCaption(e.target.value)} placeholder="Es. Il brindisi dei laureati…"/><small>{videoCaption.length}/180 · {Math.round(videoDraft.duration)} secondi · {(videoDraft.file.size / (1024 * 1024)).toFixed(1)} MB</small><div className="upload-modal-actions"><button className="secondary" disabled={videoBusy} onClick={closeVideoDraft}>Annulla</button><button className="primary" disabled={videoBusy} onClick={submitVideo}>{videoBusy ? "Caricamento…" : "Carica video"}</button></div></section></div>}
+    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi anteprima" title="Chiudi anteprima" onClick={() => setSelected(null)}><X size={24}/></button><div className="lightbox-polaroid" onClick={e => e.stopPropagation()}>{selected.media_type === "video" ? <video className="lightbox-video" src={selected.url} controls autoPlay playsInline /> : <img src={selected.url} alt="Foto della laurea"/>}<div className="lightbox-caption">{selected.caption || "Un ricordo da conservare"}</div></div>{selected.media_type === "video" ? <a className="download-photo" href={selected.url} download={`laurea-carmine-video-${selected.id}`} onClick={e => e.stopPropagation()}><Download size={16}/> Scarica video</a> : <><p className="save-photo-hint" onClick={e => e.stopPropagation()}>Su iPhone, nel menu Condividi scorri le opzioni e tocca “Salva immagine”.</p><button className="download-photo" onClick={e => { e.stopPropagation(); savePhotoToDevice(selected); }}><Share size={16}/> Salva in Foto</button></>}</div>}
   </main>;
 }
 

@@ -88,3 +88,11 @@ Le persone possono aggiungere una didascalia facoltativa (max 180 caratteri) a o
 
 ## Eliminazione multipla nell'area organizzatore
 Nella sezione **Foto già pubblicate** puoi selezionare singole foto oppure usare **Seleziona tutto**, quindi premere **Elimina selezionate**. L'app chiede conferma prima di eliminare definitivamente le immagini. L'endpoint dedicato verifica la password organizzatore e rimuove i record approvati selezionati e i relativi file dallo storage privato.
+
+## Video degli invitati (nuova funzionalità)
+
+Prima del deploy, eseguire `supabase_migration_videos.sql` nel SQL Editor del progetto Supabase. La migrazione aggiunge `media_type` alla tabella `photos`, porta il limite del bucket privato `laurea-photos` a 50 MiB e consente MP4, MOV e WebM.
+
+I video vengono caricati direttamente su Supabase Storage usando un URL di caricamento firmato generato lato server: il file non passa attraverso una Vercel Function, evitando il limite di 4,5 MB del body delle Functions. La web app accetta video fino a 180 secondi e 50 MiB, mostra una didascalia facoltativa e rispetta l'impostazione di revisione. I video approvati sono riproducibili nella galleria; l'area organizzatore permette approvazione, rifiuto ed eliminazione anche dei video. Il download multiplo resta dedicato alle foto; i video si scaricano singolarmente.
+
+Nota: il limite di 50 MiB è compatibile con il massimo del piano Supabase Free, ma il bucket deve avere un limite globale almeno pari a 50 MiB. Per video sopra i 6 MB Supabase raccomanda upload resumable TUS per una maggiore affidabilità su connessioni instabili; questa prima versione usa un upload diretto firmato standard, quindi un'interruzione può richiedere di ripetere il caricamento.
