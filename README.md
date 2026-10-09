@@ -43,4 +43,10 @@ Per testare le API serverless, usa `vercel dev` dopo aver configurato le variabi
 - Le foto caricate restano private nello Storage; URL firmati scadono dopo un'ora.
 - L'API accetta un'immagine per richiesta, max 12 MB. Verifica la compatibilità HEIC sui browser usati dagli invitati.
 - Nessun dato è inviato a un servizio esterno salvo il progetto Supabase configurato.
-- Primo deploy della web app Laurea di Carmine
+
+
+## Icona iPhone e pagina organizzatore
+- La pagina di moderazione è accessibile da `/organizzatore` (il vecchio `?admin=1` continua a funzionare).
+- Nel footer pubblico c'è il collegamento **Area organizzatore**.
+- `public/manifest.webmanifest` e `public/icons/apple-touch-icon.png` forniscono nome e icona per la Home di iOS.
+- Su iPhone aprire il sito in Safari, toccare Condividi e scegliere **Aggiungi alla schermata Home**. iOS non consente alla pagina web di aprirsi automaticamente nel foglio di condivisione; per questo l'installazione resta un'azione dell'utente.

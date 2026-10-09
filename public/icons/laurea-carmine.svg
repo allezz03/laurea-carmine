@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4d9"/><stop offset="1" stop-color="#ead4a7"/></linearGradient><linearGradient id="cap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#252327"/><stop offset="1" stop-color="#08090c"/></linearGradient></defs>
+<rect width="512" height="512" rx="110" fill="url(#bg)"/>
+<circle cx="256" cy="255" r="190" fill="#fffaf0" opacity=".4"/>
+<!-- laurel branches -->
+<g fill="#2d5a2f" stroke="#1d4324" stroke-width="3" stroke-linejoin="round">
+<path d="M145 389 C96 335 83 268 113 203 C116 270 132 324 166 362 Z"/>
+<path d="M157 354 Q110 343 96 309 Q133 310 157 354Z"/><path d="M135 313 Q92 291 91 258 Q124 272 135 313Z"/>
+<path d="M120 270 Q91 239 101 208 Q126 230 120 270Z"/><path d="M122 234 Q104 196 127 170 Q144 204 122 234Z"/>
+<path d="M367 389 C416 335 429 268 399 203 C396 270 380 324 346 362 Z"/>
+<path d="M355 354 Q402 343 416 309 Q379 310 355 354Z"/><path d="M377 313 Q420 291 421 258 Q388 272 377 313Z"/>
+<path d="M392 270 Q421 239 411 208 Q386 230 392 270Z"/><path d="M390 234 Q408 196 385 170 Q368 204 390 234Z"/>
+</g>
+<!-- graduation cap -->
+<path d="M130 204 L256 145 L382 204 L256 263 Z" fill="url(#cap)" stroke="#050507" stroke-width="5" stroke-linejoin="round"/>
+<path d="M174 226 L174 274 Q256 324 338 274 L338 226 L256 265 Z" fill="#17171c" stroke="#050507" stroke-width="4"/>
+<path d="M382 204 L382 273" stroke="#8d111d" stroke-width="8" stroke-linecap="round"/>
+<circle cx="382" cy="278" r="10" fill="#a71928"/>
+<path d="M382 278 L391 324 L373 324 Z" fill="#bd1f2d"/>
+<path d="M256 145 L256 263" stroke="#414044" stroke-width="3" opacity=".45"/>
+<!-- red bow -->
+<path d="M244 385 C213 350 177 356 183 384 C188 405 222 412 246 395 Z" fill="#bd1f2d" stroke="#8e1421" stroke-width="4"/>
+<path d="M268 385 C299 350 335 356 329 384 C324 405 290 412 266 395 Z" fill="#d52c38" stroke="#8e1421" stroke-width="4"/>
+<path d="M246 388 L224 435 L256 421 L277 439 L268 390 Z" fill="#b91929" stroke="#8e1421" stroke-width="4" stroke-linejoin="round"/>
+<circle cx="256" cy="389" r="14" fill="#e34147" stroke="#8e1421" stroke-width="4"/>
+</svg>

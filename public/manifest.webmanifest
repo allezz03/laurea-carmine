@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Laurea di Carmine",
+  "short_name": "Laurea Carmine",
+  "description": "L'album condiviso dei ricordi della laurea di Carmine.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fffaf3",
+  "theme_color": "#651d32",
+  "icons": [
+    {
+      "src": "/icons/laurea-carmine.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
