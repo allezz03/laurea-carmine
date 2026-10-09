@@ -43,3 +43,4 @@ Per testare le API serverless, usa `vercel dev` dopo aver configurato le variabi
 - Le foto caricate restano private nello Storage; URL firmati scadono dopo un'ora.
 - L'API accetta un'immagine per richiesta, max 12 MB. Verifica la compatibilità HEIC sui browser usati dagli invitati.
 - Nessun dato è inviato a un servizio esterno salvo il progetto Supabase configurato.
+- Primo deploy della web app Laurea di Carmine
