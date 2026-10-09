@@ -18,6 +18,7 @@ function App() {
   const [adminPassword, setAdminPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [adminBusy, setAdminBusy] = useState(false);
+  const [reviewEnabled, setReviewEnabled] = useState(true);
   const [selected, setSelected] = useState(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState([]);
@@ -129,8 +130,15 @@ function App() {
     if (!response.ok) throw new Error(data.error || "Non riesco a caricare le foto in revisione.");
     setPending(data.pending || (data.photos || []).filter(p => p.status === "pending"));
     setApproved(data.approved || (data.photos || []).filter(p => p.status === "approved"));
+    const reviewResponse = await fetch("/api/admin/review", { headers: { "x-admin-password": password } });
+    const reviewData = await reviewResponse.json();
+    if (!reviewResponse.ok) throw new Error(reviewData.error || "Non riesco a leggere l'impostazione di revisione.");
+    setReviewEnabled(reviewData.reviewEnabled !== false);
     setAuthenticated(true);
   }
+  useEffect(() => {
+    fetch("/api/review-status").then(r => r.json()).then(data => setReviewEnabled(data.reviewEnabled !== false)).catch(() => {});
+  }, []);
   useEffect(() => {
     if (selectedEvent) loadGallery(selectedEvent);
     const timer = setInterval(() => { if (selectedEvent) loadGallery(selectedEvent); }, 15000);
@@ -149,6 +157,7 @@ function App() {
     if (accepted.length !== files.length) setNotice("Alcuni file sono stati ignorati: sono ammessi solo immagini fino a 12 MB.");
     setBusy(true);
     let success = 0;
+    let publishedImmediately = 0;
     for (const file of accepted) {
       try {
         const form = new FormData();
@@ -158,12 +167,40 @@ function App() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Caricamento non riuscito.");
         success++;
+        if (data.status === "approved") publishedImmediately++;
       } catch (e) {
         setNotice(e.message || "Errore durante il caricamento.");
       }
     }
     setBusy(false);
-    if (success) setNotice(success === 1 ? "Foto inviata! Comparirà nell'album dopo l'approvazione." : `${success} foto inviate! Compariranno nell'album dopo l'approvazione.`);
+    if (success) {
+      if (publishedImmediately === success) setNotice(success === 1 ? "Foto caricata e pubblicata nell'album!" : `${success} foto caricate e pubblicate nell'album!`);
+      else if (publishedImmediately > 0) setNotice(`${success - publishedImmediately} foto inviate in revisione e ${publishedImmediately} pubblicate subito.`);
+      else setNotice(success === 1 ? "Foto inviata! Comparirà nell'album dopo l'approvazione." : `${success} foto inviate! Compariranno nell'album dopo l'approvazione.`);
+      await loadGallery();
+    }
+  }
+
+  async function toggleReview() {
+    const nextValue = !reviewEnabled;
+    if (!nextValue && !window.confirm("Disattivare la revisione? Tutte le foto attualmente in attesa verranno approvate e pubblicate automaticamente.")) return;
+    setAdminBusy(true);
+    try {
+      const response = await fetch("/api/admin/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-password": adminPassword },
+        body: JSON.stringify({ reviewEnabled: nextValue })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Non è stato possibile modificare la revisione.");
+      setReviewEnabled(data.reviewEnabled);
+      await loadPending();
+      await loadGallery();
+      setNotice(nextValue
+        ? "Revisione attivata: le nuove foto dovranno essere approvate."
+        : `Revisione disattivata: le nuove foto saranno pubblicate subito${data.automaticallyApproved ? ` e ${data.automaticallyApproved} foto in attesa sono state approvate automaticamente` : "; non c'erano foto in attesa"}.`);
+    } catch (e) { setNotice(e.message); }
+    finally { setAdminBusy(false); }
   }
 
   async function moderate(id, action) {
@@ -193,6 +230,10 @@ function App() {
           <input id="adminPassword" type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} autoComplete="current-password" required placeholder="Inserisci la password" />
           <button className="primary full" type="submit"><LockKeyhole size={18}/> Accedi alle approvazioni</button>
         </form> : <>
+          <div className={`review-setting ${reviewEnabled ? "review-on" : "review-off"}`}>
+            <div><b>Revisione foto: {reviewEnabled ? "ATTIVA" : "DISATTIVATA"}</b><span>{reviewEnabled ? "Le nuove foto aspettano la tua approvazione." : "Le nuove foto vengono pubblicate subito."}</span></div>
+            <button className={reviewEnabled ? "secondary" : "primary"} disabled={adminBusy} onClick={toggleReview}>{reviewEnabled ? "Disattiva revisione" : "Attiva revisione"}</button>
+          </div>
           <div className="pending-head"><b>{pending.length} foto in attesa di approvazione</b><button className="icon-button" onClick={() => loadPending().catch(e => setNotice(e.message))} aria-label="Aggiorna"><RefreshCw size={17}/></button></div>
           {pending.length === 0 ? <div className="empty"><ShieldCheck size={32}/><b>Tutto aggiornato</b><span>Non ci sono foto da approvare.</span></div> :
             <div className="pending-grid">{pending.map(p => <article className="pending-item" key={p.id}>
@@ -227,7 +268,7 @@ function App() {
           <button className="event-choice" onClick={() => { setSelectedEvent("Cena"); window.history.replaceState({}, "", `${window.location.pathname}?evento=Cena`); }}><span className="event-choice-icon"><Utensils size={27}/></span><strong>Cena</strong><small>Foto e ricordi della cena</small><span className="event-choice-arrow">Apri album →</span></button>
           <button className="event-choice" onClick={() => { setSelectedEvent("Festa"); window.history.replaceState({}, "", `${window.location.pathname}?evento=Festa`); }}><span className="event-choice-icon"><PartyPopper size={27}/></span><strong>Festa</strong><small>Foto e ricordi della festa</small><span className="event-choice-arrow">Apri album →</span></button>
         </div>
-        <p className="event-picker-note"><LockKeyhole size={13}/> Le foto vengono pubblicate solo dopo approvazione.</p>
+        <p className="event-picker-note"><LockKeyhole size={13}/> {reviewEnabled ? "Le foto vengono pubblicate solo dopo approvazione." : "Le foto vengono pubblicate subito."}</p>
       </section>
       <footer className="footer"><span className="footer-mark">C</span><p>Fatto con <Heart size={13} fill="currentColor"/> per Carmine</p><a className="organizer-link" href="/organizzatore"><LockKeyhole size={13}/> Area organizzatore</a><span className="footer-small">UN RICORDO DA CONSERVARE</span></footer>
     </main>;
@@ -242,7 +283,7 @@ function App() {
       <h1>Laurea di <em>Carmine</em></h1>
       <p className="hero-subtitle">Album {selectedEvent} · Una serata, mille ricordi.</p>
       <div className="hero-rule"><span></span><Heart size={15} fill="currentColor"/><span></span></div>
-      <p className="hero-copy">Scatta, condividi e rivivi i momenti più belli.<br/>Carica qui le tue foto: dopo una rapida approvazione, saranno visibili a tutti.</p>
+      <p className="hero-copy">Scatta, condividi e rivivi i momenti più belli.<br/>{reviewEnabled ? "Carica qui le tue foto: dopo una rapida approvazione, saranno visibili a tutti." : "Carica qui le tue foto: verranno pubblicate subito nell'album condiviso."}</p>
       <div className="upload-options">
         <label className={`upload-button ${busy ? "is-busy" : ""}`}>
           {busy ? <RefreshCw className="spin" size={20}/> : <Camera size={20}/>}
@@ -255,7 +296,7 @@ function App() {
           <input type="file" accept="image/*" multiple disabled={busy} onChange={e => { uploadFiles(e.target.files); e.target.value = ""; }}/>
         </label>
       </div>
-      <p className="upload-hint"><Camera size={13}/> Scatta una nuova foto oppure selezionane una o più dalla galleria.</p><p className="upload-hint"><LockKeyhole size={13}/> Le foto vengono pubblicate solo dopo approvazione.</p>
+      <p className="upload-hint"><Camera size={13}/> Scatta una nuova foto oppure selezionane una o più dalla galleria.</p><p className="upload-hint"><LockKeyhole size={13}/> {reviewEnabled ? "Le foto vengono pubblicate solo dopo approvazione." : "La revisione è disattivata: le foto saranno pubblicate subito."}</p>
       {notice && <div className="notice hero-notice" role="status">{notice}</div>}
       <a href="#album" className="scroll-link">SCOPRI L'ALBUM <span>↓</span></a>
     </section>

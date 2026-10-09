@@ -26,3 +26,4 @@
 /* Chiusura anteprima ben visibile anche su smartphone */
 .close-lightbox{position:absolute;right:18px;top:18px;z-index:3;width:46px;height:46px;display:grid;place-items:center;border:2px solid var(--gold);border-radius:50%;background:var(--wine);color:#fffaf3;box-shadow:0 3px 14px #0006;cursor:pointer}
 .close-lightbox:active{transform:scale(.96)}
+.review-setting{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;margin:22px 0 8px;border:1px solid var(--line);border-radius:8px;background:#fff}.review-setting>div{display:flex;flex-direction:column;gap:5px}.review-setting b{font-size:13px;color:var(--wine)}.review-setting span{font-size:12px;color:var(--muted);line-height:1.5}.review-setting button{white-space:nowrap;flex-shrink:0}.review-on{border-left:4px solid #65876a}.review-off{border-left:4px solid #c5a365}@media(max-width:520px){.review-setting{align-items:stretch;flex-direction:column}.review-setting button{width:100%}}

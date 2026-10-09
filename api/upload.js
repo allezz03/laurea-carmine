@@ -33,16 +33,21 @@ export default async function handler(req, res) {
     if (!ext) return json(res, 415, { error: "Formato non supportato. Usa JPG, PNG, WebP o HEIC." });
 
     const supabase = supabaseAdmin();
+    // If the setting table is not migrated yet, preserve the safe current default: review enabled.
+    let reviewEnabled = true;
+    const { data: reviewSetting, error: reviewSettingError } = await supabase.from("app_settings").select("value").eq("key", "review_enabled").maybeSingle();
+    if (!reviewSettingError && reviewSetting) reviewEnabled = reviewSetting.value !== false;
     const id = randomUUID();
     const path = `${id}.${ext}`;
     const { error: uploadError } = await supabase.storage.from("laurea-photos").upload(path, fileBuffer, { contentType: mimeType, upsert: false });
     if (uploadError) throw uploadError;
-    const { error: dbError } = await supabase.from("photos").insert({ id, storage_path: path, status: "pending", mime_type: mimeType, size_bytes: fileBuffer.length, event: eventName });
+    const status = reviewEnabled ? "pending" : "approved";
+    const { error: dbError } = await supabase.from("photos").insert({ id, storage_path: path, status, mime_type: mimeType, size_bytes: fileBuffer.length, event: eventName, reviewed_at: reviewEnabled ? null : new Date().toISOString() });
     if (dbError) {
       await supabase.storage.from("laurea-photos").remove([path]);
       throw dbError;
     }
-    return json(res, 201, { ok: true, message: "Foto inviata per approvazione." });
+    return json(res, 201, { ok: true, status, message: reviewEnabled ? "Foto inviata per approvazione." : "Foto caricata e pubblicata nell'album." });
   } catch (error) {
     console.error("upload error:", error?.message || error);
     return json(res, 500, { error: "Non è stato possibile caricare la foto. Riprova tra poco." });
