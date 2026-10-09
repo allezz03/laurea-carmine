@@ -69,7 +69,7 @@
     flex-shrink: 0;
     height: auto;
     min-height: calc(62px + env(safe-area-inset-top, 0px));
-    padding-top: max(env(safe-area-inset-top, 0px), 48px);
+    padding-top: max(env(safe-area-inset-top, 0px), 88px);
     padding-right: 17px;
     padding-bottom: 12px;
     padding-left: 17px;
