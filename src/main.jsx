@@ -20,6 +20,7 @@ function App() {
   const [adminBusy, setAdminBusy] = useState(false);
   const [reviewEnabled, setReviewEnabled] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [showQrZoom, setShowQrZoom] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState([]);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -314,6 +315,7 @@ function App() {
 
   if (!selectedEvent) {
     return <main className="event-picker-page">
+      <nav className="topbar event-picker-topbar"><a className="brand" href="/"><span className="brand-mark">C</span><span>LAUREA DI <b>CARMINE</b></span></a><a className="nav-link organizer-top-link" href="/organizzatore"><LockKeyhole size={15}/> Area organizzatore</a></nav>
       <section className="event-picker">
         <div className="laurel">✳</div>
         <span className="eyebrow"><Sparkles size={14}/> UNA GIORNATA DA RICORDARE</span>
@@ -330,7 +332,7 @@ function App() {
   }
 
   return <main>
-    <nav className="topbar"><a className="brand" href="#" onClick={e => { e.preventDefault(); setSelectedEvent(null); window.history.replaceState({}, "", window.location.pathname); }}><span className="brand-mark">C</span><span>LAUREA DI <b>CARMINE</b></span></a><div className="topbar-right"><span className="active-event-pill">Album {selectedEvent}</span><button className="nav-link change-event" onClick={() => { setSelectedEvent(null); window.history.replaceState({}, "", window.location.pathname); }}><ArrowLeft size={15}/> Cambia album</button></div></nav>
+    <nav className="topbar"><a className="brand" href="#" onClick={e => { e.preventDefault(); setSelectedEvent(null); window.history.replaceState({}, "", window.location.pathname); }}><span className="brand-mark">C</span><span>LAUREA DI <b>CARMINE</b></span></a><div className="topbar-right"><a className="nav-link organizer-top-link" href="/organizzatore"><LockKeyhole size={15}/> Area organizzatore</a><span className="active-event-pill">Album {selectedEvent}</span><button className="nav-link change-event" onClick={() => { setSelectedEvent(null); window.history.replaceState({}, "", window.location.pathname); }}><ArrowLeft size={15}/> Cambia album</button></div></nav>
 
     <section className="hero">
       <div className="hero-glow"></div><div className="laurel">✳</div>
@@ -377,8 +379,9 @@ function App() {
       <div className="gallery-refresh"><span><span className="live-dot"></span> Album aggiornato automaticamente</span><button onClick={loadGallery}><RefreshCw size={14}/> Aggiorna</button></div>
     </section>
 
-    <section className="share-section"><div className="share-card"><div><span className="eyebrow">INVITA I TUOI RICORDI</span><h2>Condividi il momento.</h2><p>Inquadra il QR code per aprire l'album {selectedEvent} da un altro telefono.</p></div><div className="qr-frame"><QRCodeSVG value={`${APP_URL}/?evento=${encodeURIComponent(selectedEvent)}`} size={130} bgColor="#fffaf3" fgColor="#651d32" level="M" includeMargin/></div></div></section>
+    <section className="share-section"><div className="share-card"><div><span className="eyebrow">INVITA I TUOI RICORDI</span><h2>Condividi il momento.</h2><p>Inquadra il QR code per aprire l'album {selectedEvent} da un altro telefono.</p></div><button type="button" className="qr-frame qr-zoom-trigger" onClick={() => setShowQrZoom(true)} aria-label="Ingrandisci codice QR" title="Clicca per ingrandire il QR code"><QRCodeSVG value={`${APP_URL}/?evento=${encodeURIComponent(selectedEvent)}`} size={130} bgColor="#fffaf3" fgColor="#651d32" level="M" includeMargin/><span className="qr-zoom-label">Clicca per ingrandire</span></button></div></section>
     <footer className="footer"><span className="footer-mark">C</span><p>Fatto con <Heart size={13} fill="currentColor"/> per Carmine</p><a className="organizer-link" href="/organizzatore"><LockKeyhole size={13}/> Area organizzatore</a><span className="footer-small">UN RICORDO DA CONSERVARE</span></footer>
+    {showQrZoom && <div className="qr-modal-backdrop" role="dialog" aria-modal="true" aria-label="Codice QR ingrandito" onClick={() => setShowQrZoom(false)}><section className="qr-modal" onClick={e => e.stopPropagation()}><button className="close-qr-modal" onClick={() => setShowQrZoom(false)} aria-label="Chiudi codice QR" title="Chiudi"><X size={23}/></button><span className="eyebrow">CONDIVIDI L'ALBUM {selectedEvent.toUpperCase()}</span><h2>Inquadra il codice QR</h2><div className="qr-frame qr-frame-large"><QRCodeSVG value={`${APP_URL}/?evento=${encodeURIComponent(selectedEvent)}`} size={280} bgColor="#fffaf3" fgColor="#651d32" level="M" includeMargin/></div><p>Apri la fotocamera del telefono e inquadra il codice per accedere all'album.</p></section></div>}
     {uploadQueue.length > 0 && <div className="upload-modal-backdrop" role="dialog" aria-modal="true" aria-label="Aggiungi didascalie alle foto"><section className="upload-modal"><button className="close-upload-modal" disabled={busy} onClick={closeUploadQueue} aria-label="Chiudi" title="Chiudi"><X size={21}/></button><span className="eyebrow"><Images size={14}/> I TUOI RICORDI</span><h2>Aggiungi una dedica</h2><p className="muted">Scrivi una frase sotto ogni foto, proprio come su una Polaroid. È facoltativo.</p><div className="caption-queue">{uploadQueue.map((item, index) => <article className="caption-queue-item" key={`${item.file.name}-${index}`}><img src={item.preview} alt={`Anteprima foto ${index + 1}`}/><div><label htmlFor={`caption-${index}`}>Didascalia {uploadQueue.length > 1 ? index + 1 : ""}</label><textarea id={`caption-${index}`} maxLength={180} value={item.caption} disabled={busy} onChange={e => updateUploadCaption(index, e.target.value)} placeholder="Es. Una serata indimenticabile!"/><small>{item.caption.length}/180</small></div></article>)}</div><div className="upload-modal-actions"><button className="secondary" disabled={busy} onClick={closeUploadQueue}>Annulla</button><button className="primary" disabled={busy} onClick={submitUploadQueue}>{busy ? "Caricamento…" : `Carica ${uploadQueue.length} ${uploadQueue.length === 1 ? "foto" : "foto"}`}</button></div></section></div>}
     {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi anteprima" title="Chiudi anteprima" onClick={() => setSelected(null)}><X size={24}/></button><div className="lightbox-polaroid" onClick={e => e.stopPropagation()}><img src={selected.url} alt="Foto della laurea"/><div className="lightbox-caption">{selected.caption || "Un ricordo da conservare"}</div></div><p className="save-photo-hint" onClick={e => e.stopPropagation()}>Su iPhone, nel menu Condividi scorri le opzioni e tocca “Salva immagine”.</p><button className="download-photo" onClick={e => { e.stopPropagation(); savePhotoToDevice(selected); }}><Share size={16}/> Salva in Foto</button></div>}
   </main>;
