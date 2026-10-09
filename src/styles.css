@@ -13,3 +13,12 @@
 /* Native share / save-to-Photos action */
 .download-photo{font:inherit;cursor:pointer;border:0;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:9px}
 .save-photo-hint{margin:10px 0 0;color:#f6e7d8;font-size:12px;text-align:center;max-width:min(90vw,420px)}
+
+.bulk-toolbar{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:9px;margin:-8px 0 18px}
+.bulk-toolbar>span{margin-right:auto;color:var(--wine);font-size:12px;font-weight:700}
+.bulk-toolbar .primary,.bulk-toolbar .secondary{padding:10px 13px;font-size:12px}
+.photo-tile.is-selected{outline:4px solid var(--gold);outline-offset:-4px}
+.selection-mark{position:absolute;right:10px;top:10px;width:28px;height:28px;border-radius:50%;border:2px solid white;background:#fffaf3e8;color:var(--wine);display:grid;place-items:center;box-shadow:0 2px 8px #0003}
+.photo-tile.is-selected .selection-mark{background:var(--wine);color:white}
+.save-photo-hint{position:absolute;bottom:79px;max-width:360px;text-align:center;color:#fffaf3;font-size:13px;line-height:1.5;margin:0;padding:0 16px}
+@media(max-width:600px){.bulk-toolbar{justify-content:flex-start}.bulk-toolbar>span{width:100%}.bulk-toolbar .primary,.bulk-toolbar .secondary{font-size:11px;padding:10px}.save-photo-hint{bottom:82px;font-size:12px}}

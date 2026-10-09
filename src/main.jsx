@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import JSZip from "jszip";
 import { createRoot } from "react-dom/client";
 import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, ArrowLeft, Utensils, PartyPopper } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -19,6 +20,9 @@ function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [adminBusy, setAdminBusy] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedPhotoIds, setSelectedPhotoIds] = useState([]);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   async function loadGallery(eventName = selectedEvent) {
     if (!eventName) { setPhotos([]); return; }
@@ -61,6 +65,49 @@ function App() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+    }
+  }
+
+  function togglePhotoSelection(photo) {
+    setSelectedPhotoIds(current => current.includes(photo.id)
+      ? current.filter(id => id !== photo.id)
+      : [...current, photo.id]);
+  }
+
+  async function downloadSelectedPhotos() {
+    const chosen = photos.filter(photo => selectedPhotoIds.includes(photo.id));
+    if (!chosen.length) {
+      setNotice("Seleziona almeno una foto da scaricare.");
+      return;
+    }
+    setBulkBusy(true);
+    setNotice("Preparo il pacchetto di foto…");
+    try {
+      const zip = new JSZip();
+      for (let i = 0; i < chosen.length; i++) {
+        const photo = chosen[i];
+        const response = await fetch(`/api/download?id=${encodeURIComponent(photo.id)}`);
+        if (!response.ok) throw new Error("Non è stato possibile scaricare una delle foto selezionate.");
+        const blob = await response.blob();
+        const extension = (blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg").replace("heic", "heic");
+        zip.file(`laurea-carmine-${(selectedEvent || "foto").toLowerCase()}-${i + 1}.${extension}`, blob);
+      }
+      const archive = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(archive);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `laurea-carmine-${(selectedEvent || "foto").toLowerCase()}-foto.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setNotice("Download pronto! Se usi iPhone, apri il file ZIP da File e scegli le foto da salvare in Foto.");
+      setSelectionMode(false);
+      setSelectedPhotoIds([]);
+    } catch (error) {
+      setNotice(error?.message || "Non è stato possibile preparare il download.");
+    } finally {
+      setBulkBusy(false);
     }
   }
 
@@ -196,14 +243,27 @@ function App() {
 
     <section className="album-section" id="album">
       <div className="section-heading"><div><span className="eyebrow">I NOSTRI RICORDI</span><h2>La galleria condivisa</h2><p className="muted">I momenti più belli, raccolti in un unico posto.</p></div><span className="photo-count">{photos.length} {photos.length === 1 ? "foto" : "foto"}</span></div>
-      {photos.length ? <div className="photo-grid">{photos.map((photo, i) => <button className="photo-tile" key={photo.id} onClick={() => setSelected(photo)} aria-label={`Apri foto ${i+1}`}><img src={photo.url} alt={`Ricordo della laurea di Carmine ${i+1}`} loading="lazy"/><span className="photo-overlay"><Heart size={18}/></span></button>)}</div> :
+      {photos.length ? <>
+        <div className="bulk-toolbar">
+          {!selectionMode ? <button className="secondary" onClick={() => { setSelectionMode(true); setSelectedPhotoIds([]); }}><Check size={16}/> Seleziona foto da scaricare</button> : <>
+            <span>{selectedPhotoIds.length} selezionate</span>
+            <button className="secondary" onClick={() => setSelectedPhotoIds(photos.map(p => p.id))}>Seleziona tutte</button>
+            <button className="primary" disabled={bulkBusy || selectedPhotoIds.length === 0} onClick={downloadSelectedPhotos}><Download size={16}/>{bulkBusy ? "Preparo…" : "Scarica selezionate"}</button>
+            <button className="text-button" onClick={() => { setSelectionMode(false); setSelectedPhotoIds([]); }}>Annulla</button>
+          </>}
+        </div>
+        <div className="photo-grid">{photos.map((photo, i) => <button className={`photo-tile ${selectionMode && selectedPhotoIds.includes(photo.id) ? "is-selected" : ""}`} key={photo.id} onClick={() => selectionMode ? togglePhotoSelection(photo) : setSelected(photo)} aria-label={selectionMode ? `Seleziona foto ${i+1}` : `Apri foto ${i+1}`}>
+          <img src={photo.url} alt={`Ricordo della laurea di Carmine ${i+1}`} loading="lazy"/>
+          {selectionMode ? <span className="selection-mark">{selectedPhotoIds.includes(photo.id) ? <Check size={19}/> : null}</span> : <span className="photo-overlay"><Heart size={18}/></span>}
+        </button>)}</div>
+      </> :
         <div className="empty-gallery"><div className="empty-icon"><Images size={30}/></div><h3>Il primo ricordo può essere il tuo</h3><p>Le foto approvate dagli organizzatori appariranno qui durante la festa.</p><button className="text-button" onClick={() => window.scrollTo({top: 0, behavior: "smooth"})}>Carica la prima foto <span>↑</span></button></div>}
       <div className="gallery-refresh"><span><span className="live-dot"></span> Album aggiornato automaticamente</span><button onClick={loadGallery}><RefreshCw size={14}/> Aggiorna</button></div>
     </section>
 
     <section className="share-section"><div className="share-card"><div><span className="eyebrow">INVITA I TUOI RICORDI</span><h2>Condividi il momento.</h2><p>Inquadra il QR code per aprire l'album {selectedEvent} da un altro telefono.</p></div><div className="qr-frame"><QRCodeSVG value={`${APP_URL}/?evento=${encodeURIComponent(selectedEvent)}`} size={130} bgColor="#fffaf3" fgColor="#651d32" level="M" includeMargin/></div></div></section>
     <footer className="footer"><span className="footer-mark">C</span><p>Fatto con <Heart size={13} fill="currentColor"/> per Carmine</p><a className="organizer-link" href="/organizzatore"><LockKeyhole size={13}/> Area organizzatore</a><span className="footer-small">UN RICORDO DA CONSERVARE</span></footer>
-    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi" onClick={() => setSelected(null)}><X/></button><img src={selected.url} alt="Foto della laurea" onClick={e => e.stopPropagation()}/><button className="download-photo" onClick={e => { e.stopPropagation(); savePhotoToDevice(selected); }}><Share size={16}/> Salva in Foto</button><p className="save-photo-hint" onClick={e => e.stopPropagation()}>Su iPhone, scegli “Salva immagine” nel menu Condividi.</p></div>}
+    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi" onClick={() => setSelected(null)}><X/></button><img src={selected.url} alt="Foto della laurea" onClick={e => e.stopPropagation()}/><p className="save-photo-hint" onClick={e => e.stopPropagation()}>Su iPhone, nel menu Condividi scorri le opzioni e tocca “Salva immagine”.</p><button className="download-photo" onClick={e => { e.stopPropagation(); savePhotoToDevice(selected); }}><Share size={16}/> Salva in Foto</button></div>}
   </main>;
 }
 

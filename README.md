@@ -62,3 +62,7 @@ Il pulsante “Scarica foto” usa `/api/download?id=...`: il server controlla c
 
 ## Salvataggio delle foto su smartphone
 Il pulsante nella visualizzazione della foto usa la condivisione nativa del browser quando supporta la condivisione di file. Su iPhone, nel menu Condividi l'utente può scegliere **Salva immagine** per aggiungerla a Foto. Nei browser non compatibili viene avviato il download classico. Per motivi di privacy, il sito non può salvare automaticamente nel rullino senza un'azione dell'utente.
+
+
+## Download multiplo delle foto
+Nella galleria, scegli **Seleziona foto da scaricare**, seleziona una o più immagini e premi **Scarica selezionate**. Il sito prepara un archivio ZIP scaricabile. Su iPhone, apri lo ZIP nell'app File e, se necessario, estrailo prima di salvare le immagini in Foto. Nel dettaglio della singola foto, le istruzioni per iPhone sono visualizzate sopra il pulsante **Salva in Foto**.
