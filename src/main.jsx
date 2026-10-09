@@ -167,7 +167,7 @@ function App() {
 
     <section className="share-section"><div className="share-card"><div><span className="eyebrow">INVITA I TUOI RICORDI</span><h2>Condividi il momento.</h2><p>Inquadra il QR code per aprire l'album {selectedEvent} da un altro telefono.</p></div><div className="qr-frame"><QRCodeSVG value={`${APP_URL}/?evento=${encodeURIComponent(selectedEvent)}`} size={130} bgColor="#fffaf3" fgColor="#651d32" level="M" includeMargin/></div></div></section>
     <footer className="footer"><span className="footer-mark">C</span><p>Fatto con <Heart size={13} fill="currentColor"/> per Carmine</p><a className="organizer-link" href="/organizzatore"><LockKeyhole size={13}/> Area organizzatore</a><span className="footer-small">UN RICORDO DA CONSERVARE</span></footer>
-    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi" onClick={() => setSelected(null)}><X/></button><img src={selected.url} alt="Foto della laurea" onClick={e => e.stopPropagation()}/><a className="download-photo" href={selected.url} download><Download size={16}/> Scarica foto</a></div>}
+    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi" onClick={() => setSelected(null)}><X/></button><img src={selected.url} alt="Foto della laurea" onClick={e => e.stopPropagation()}/><a className="download-photo" href={`/api/download?id=${encodeURIComponent(selected.id)}`} download={`laurea-carmine-${selected.event || "foto"}-${selected.id}.jpg`}><Download size={16}/> Scarica foto</a></div>}
   </main>;
 }
 

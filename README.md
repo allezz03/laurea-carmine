@@ -54,3 +54,7 @@ Per testare le API serverless, usa `vercel dev` dopo aver configurato le variabi
 
 ## Album separati Cena e Festa
 Per un database già esistente, eseguire una sola volta `supabase_migration_cena_festa.sql` nel SQL Editor di Supabase. Le foto già presenti vengono assegnate all'album **Festa**; le nuove foto salvano l'evento selezionato. L'area organizzatore consente di eliminare definitivamente foto pubblicate.
+
+
+## Download foto su smartphone
+Il pulsante “Scarica foto” usa `/api/download?id=...`: il server controlla che la foto sia approvata e la invia come allegato (`Content-Disposition: attachment`), così i browser mobili gestiscono il salvataggio in modo più affidabile rispetto al link diretto a Supabase.
