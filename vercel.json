@@ -1,4 +1,15 @@
+
 {
+  "rewrites": [
+    {
+      "source": "/organizzatore",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/organizzatore/",
+      "destination": "/index.html"
+    }
+  ],
   "functions": {
     "api/*.js": {
       "maxDuration": 30
