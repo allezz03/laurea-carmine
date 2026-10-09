@@ -12,10 +12,12 @@ export default async function handler(req, res) {
   let mimeType = "";
   let tooLarge = false;
   let eventName = "Festa";
+  let caption = "";
   try {
     await new Promise((resolve, reject) => {
       const bb = Busboy({ headers: req.headers, limits: { files: 1, fileSize: MAX_BYTES } });
-      bb.on("field", (name, value) => { if (name === "event" && ["Cena", "Festa"].includes(value)) eventName = value; });
+      bb.on("field", (name, value) => { if (name === "event" && ["Cena", "Festa"].includes(value)) eventName = value;
+        if (name === "caption") caption = String(value || "").trim().slice(0, 180); });
       bb.on("file", (_name, stream, info) => {
         mimeType = info.mimeType;
         const chunks = [];
@@ -42,7 +44,7 @@ export default async function handler(req, res) {
     const { error: uploadError } = await supabase.storage.from("laurea-photos").upload(path, fileBuffer, { contentType: mimeType, upsert: false });
     if (uploadError) throw uploadError;
     const status = reviewEnabled ? "pending" : "approved";
-    const { error: dbError } = await supabase.from("photos").insert({ id, storage_path: path, status, mime_type: mimeType, size_bytes: fileBuffer.length, event: eventName, reviewed_at: reviewEnabled ? null : new Date().toISOString() });
+    const { error: dbError } = await supabase.from("photos").insert({ id, storage_path: path, status, mime_type: mimeType, size_bytes: fileBuffer.length, event: eventName, caption: caption || null, reviewed_at: reviewEnabled ? null : new Date().toISOString() });
     if (dbError) {
       await supabase.storage.from("laurea-photos").remove([path]);
       throw dbError;

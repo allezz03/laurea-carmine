@@ -23,6 +23,9 @@ function App() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState([]);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [preparedFiles, setPreparedFiles] = useState([]);
+  const [preparedPhotoIds, setPreparedPhotoIds] = useState([]);
+  const [uploadQueue, setUploadQueue] = useState([]);
 
   async function loadGallery(eventName = selectedEvent) {
     if (!eventName) { setPhotos([]); return; }
@@ -69,23 +72,57 @@ function App() {
   }
 
   function togglePhotoSelection(photo) {
+    setPreparedFiles([]);
+    setPreparedPhotoIds([]);
     setSelectedPhotoIds(current => current.includes(photo.id)
       ? current.filter(id => id !== photo.id)
       : [...current, photo.id]);
   }
 
   async function downloadSelectedPhotos() {
+    // If the files are already prepared, call navigator.share immediately from
+    // this click handler. Awaiting a fetch first would lose the browser's user gesture.
+    if (preparedFiles.length) {
+      try {
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: preparedFiles })) {
+          const sharePromise = navigator.share({ files: preparedFiles, title: "Laurea di Carmine", text: "Foto della laurea di Carmine" });
+          await sharePromise;
+          const completed = new Set(preparedPhotoIds);
+          const remainingIds = selectedPhotoIds.filter(id => !completed.has(id));
+          setSelectedPhotoIds(remainingIds);
+          setPreparedFiles([]);
+          setPreparedPhotoIds([]);
+          if (remainingIds.length) {
+            setNotice(`Gruppo condiviso. Restano ${remainingIds.length} foto: premi “Prepara foto selezionate” per continuare.`);
+          } else {
+            setNotice("Scegli “Salva immagini” nel menu di condivisione per salvarle in Foto.");
+            setSelectionMode(false);
+          }
+        } else {
+          setNotice("La condivisione di più immagini non è supportata da questo browser. Prova con Safari aggiornato.");
+        }
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+        setNotice(error?.message || "Non è stato possibile aprire la condivisione. Riprova.");
+      }
+      return;
+    }
+
     const chosen = photos.filter(photo => selectedPhotoIds.includes(photo.id));
     if (!chosen.length) {
       setNotice("Seleziona almeno una foto da salvare.");
       return;
     }
+
+    // Prepare up to three files asynchronously first. Sharing is a separate tap,
+    // so navigator.share can be called directly during the next user gesture.
+    const batch = chosen.slice(0, 3);
     setBulkBusy(true);
     try {
       const files = [];
-      for (let i = 0; i < chosen.length; i++) {
-        const photo = chosen[i];
-        setNotice(`Preparo la foto ${i + 1} di ${chosen.length}…`);
+      for (let i = 0; i < batch.length; i++) {
+        const photo = batch[i];
+        setNotice(`Preparo la foto ${i + 1} di ${batch.length}…`);
         const response = await fetch(`/api/download?id=${encodeURIComponent(photo.id)}`);
         if (!response.ok) throw new Error(`Non è stato possibile preparare la foto ${i + 1}.`);
         const blob = await response.blob();
@@ -94,14 +131,12 @@ function App() {
         const extension = subtype === "jpeg" ? "jpg" : subtype;
         files.push(new File([blob], `laurea-carmine-${(photo.event || selectedEvent || "foto").toLowerCase()}-${photo.id}.${extension}`, { type: mime }));
       }
-
-      // On iPhone, share all selected image files together so iOS can offer
-      // its native "Save Images" action in Photos, without a ZIP or Files app.
       if (navigator.share && navigator.canShare && navigator.canShare({ files })) {
-        await navigator.share({ files, title: "Laurea di Carmine", text: "Foto della laurea di Carmine" });
-        setNotice("Seleziona “Salva immagini” nel menu di condivisione per salvarle in Foto.");
+        setPreparedFiles(files);
+        setPreparedPhotoIds(batch.map(photo => photo.id));
+        setNotice(`Pronte ${files.length} foto. Premi di nuovo il pulsante per aprire la condivisione e salvarle in Foto.`);
       } else {
-        // Fallback for browsers without multi-file sharing support.
+        // Fallback for browsers without native file sharing.
         for (const file of files) {
           const url = URL.createObjectURL(file);
           const link = document.createElement("a");
@@ -112,12 +147,13 @@ function App() {
           link.remove();
           window.setTimeout(() => URL.revokeObjectURL(url), 30000);
         }
-        setNotice("Il browser non supporta il salvataggio condiviso di più immagini: sono state avviate le singole foto.");
+        const completed = new Set(batch.map(photo => photo.id));
+        const remainingIds = selectedPhotoIds.filter(id => !completed.has(id));
+        setSelectedPhotoIds(remainingIds);
+        setNotice(remainingIds.length ? `Download avviato. Restano ${remainingIds.length} foto.` : "Download delle foto avviato.");
+        if (!remainingIds.length) setSelectionMode(false);
       }
-      setSelectionMode(false);
-      setSelectedPhotoIds([]);
     } catch (error) {
-      if (error?.name === "AbortError") return;
       setNotice(error?.message || "Non è stato possibile preparare le foto selezionate. Riprova.");
     } finally {
       setBulkBusy(false);
@@ -146,7 +182,7 @@ function App() {
   }, [selectedEvent]);
   useEffect(() => { if (ADMIN_MODE && authenticated) loadPending().catch(e => setNotice(e.message)); }, [authenticated]);
 
-  async function uploadFiles(fileList) {
+  function uploadFiles(fileList) {
     const files = Array.from(fileList || []);
     if (!files.length) return;
     const accepted = files.filter(f => f.type.startsWith("image/") && f.size <= 12 * 1024 * 1024);
@@ -155,14 +191,31 @@ function App() {
       return;
     }
     if (accepted.length !== files.length) setNotice("Alcuni file sono stati ignorati: sono ammessi solo immagini fino a 12 MB.");
+    setUploadQueue(accepted.map(file => ({ file, caption: "", preview: URL.createObjectURL(file) })));
+  }
+
+  function updateUploadCaption(index, caption) {
+    setUploadQueue(current => current.map((item, i) => i === index ? { ...item, caption } : item));
+  }
+
+  function closeUploadQueue() {
+    uploadQueue.forEach(item => URL.revokeObjectURL(item.preview));
+    setUploadQueue([]);
+  }
+
+  async function submitUploadQueue() {
+    if (!uploadQueue.length) return;
     setBusy(true);
     let success = 0;
     let publishedImmediately = 0;
-    for (const file of accepted) {
+    const queue = [...uploadQueue];
+    for (const [index, item] of queue.entries()) {
       try {
+        setNotice(`Carico la foto ${index + 1} di ${queue.length}…`);
         const form = new FormData();
         form.append("event", selectedEvent || "Festa");
-        form.append("photo", file);
+        form.append("caption", item.caption.trim().slice(0, 180));
+        form.append("photo", item.file);
         const response = await fetch("/api/upload", { method: "POST", body: form });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Caricamento non riuscito.");
@@ -172,6 +225,8 @@ function App() {
         setNotice(e.message || "Errore durante il caricamento.");
       }
     }
+    queue.forEach(item => URL.revokeObjectURL(item.preview));
+    setUploadQueue([]);
     setBusy(false);
     if (success) {
       if (publishedImmediately === success) setNotice(success === 1 ? "Foto caricata e pubblicata nell'album!" : `${success} foto caricate e pubblicate nell'album!`);
@@ -308,13 +363,14 @@ function App() {
           {!selectionMode ? <button className="secondary" onClick={() => { setSelectionMode(true); setSelectedPhotoIds([]); }}><Check size={16}/> Seleziona foto da scaricare</button> : <>
             <span>{selectedPhotoIds.length} selezionate</span>
             <button className="secondary" onClick={() => setSelectedPhotoIds(photos.map(p => p.id))}>Seleziona tutte</button>
-            <button className="primary" disabled={bulkBusy || selectedPhotoIds.length === 0} onClick={downloadSelectedPhotos}><Download size={16}/>{bulkBusy ? "Scarico…" : "Salva foto selezionate"}</button>
+            <button className="primary" disabled={bulkBusy || selectedPhotoIds.length === 0} onClick={downloadSelectedPhotos}><Download size={16}/>{bulkBusy ? "Preparo…" : preparedFiles.length ? `Condividi ${preparedFiles.length} foto` : "Prepara foto selezionate"}</button>
             <button className="text-button" onClick={() => { setSelectionMode(false); setSelectedPhotoIds([]); }}>Annulla</button>
           </>}
         </div>
         <div className="photo-grid">{photos.map((photo, i) => <button className={`photo-tile ${selectionMode && selectedPhotoIds.includes(photo.id) ? "is-selected" : ""}`} key={photo.id} onClick={() => selectionMode ? togglePhotoSelection(photo) : setSelected(photo)} aria-label={selectionMode ? `Seleziona foto ${i+1}` : `Apri foto ${i+1}`}>
-          <img src={photo.url} alt={`Ricordo della laurea di Carmine ${i+1}`} loading="lazy"/>
-          {selectionMode ? <span className="selection-mark">{selectedPhotoIds.includes(photo.id) ? <Check size={19}/> : null}</span> : <span className="photo-overlay"><Heart size={18}/></span>}
+          <span className="polaroid-image"><img src={photo.url} alt={`Ricordo della laurea di Carmine ${i+1}`} loading="lazy"/>
+          {selectionMode ? <span className="selection-mark">{selectedPhotoIds.includes(photo.id) ? <Check size={19}/> : null}</span> : <span className="photo-overlay"><Heart size={18}/></span>}</span>
+          <span className={`polaroid-caption ${photo.caption ? "has-caption" : ""}`}>{photo.caption || "Un ricordo da conservare"}</span>
         </button>)}</div>
       </> :
         <div className="empty-gallery"><div className="empty-icon"><Images size={30}/></div><h3>Il primo ricordo può essere il tuo</h3><p>Le foto approvate dagli organizzatori appariranno qui durante la festa.</p><button className="text-button" onClick={() => window.scrollTo({top: 0, behavior: "smooth"})}>Carica la prima foto <span>↑</span></button></div>}
@@ -323,7 +379,8 @@ function App() {
 
     <section className="share-section"><div className="share-card"><div><span className="eyebrow">INVITA I TUOI RICORDI</span><h2>Condividi il momento.</h2><p>Inquadra il QR code per aprire l'album {selectedEvent} da un altro telefono.</p></div><div className="qr-frame"><QRCodeSVG value={`${APP_URL}/?evento=${encodeURIComponent(selectedEvent)}`} size={130} bgColor="#fffaf3" fgColor="#651d32" level="M" includeMargin/></div></div></section>
     <footer className="footer"><span className="footer-mark">C</span><p>Fatto con <Heart size={13} fill="currentColor"/> per Carmine</p><a className="organizer-link" href="/organizzatore"><LockKeyhole size={13}/> Area organizzatore</a><span className="footer-small">UN RICORDO DA CONSERVARE</span></footer>
-    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi anteprima" title="Chiudi anteprima" onClick={() => setSelected(null)}><X size={24}/></button><img src={selected.url} alt="Foto della laurea" onClick={e => e.stopPropagation()}/><p className="save-photo-hint" onClick={e => e.stopPropagation()}>Su iPhone, nel menu Condividi scorri le opzioni e tocca “Salva immagine”.</p><button className="download-photo" onClick={e => { e.stopPropagation(); savePhotoToDevice(selected); }}><Share size={16}/> Salva in Foto</button></div>}
+    {uploadQueue.length > 0 && <div className="upload-modal-backdrop" role="dialog" aria-modal="true" aria-label="Aggiungi didascalie alle foto"><section className="upload-modal"><button className="close-upload-modal" disabled={busy} onClick={closeUploadQueue} aria-label="Chiudi" title="Chiudi"><X size={21}/></button><span className="eyebrow"><Images size={14}/> I TUOI RICORDI</span><h2>Aggiungi una dedica</h2><p className="muted">Scrivi una frase sotto ogni foto, proprio come su una Polaroid. È facoltativo.</p><div className="caption-queue">{uploadQueue.map((item, index) => <article className="caption-queue-item" key={`${item.file.name}-${index}`}><img src={item.preview} alt={`Anteprima foto ${index + 1}`}/><div><label htmlFor={`caption-${index}`}>Didascalia {uploadQueue.length > 1 ? index + 1 : ""}</label><textarea id={`caption-${index}`} maxLength={180} value={item.caption} disabled={busy} onChange={e => updateUploadCaption(index, e.target.value)} placeholder="Es. Una serata indimenticabile!"/><small>{item.caption.length}/180</small></div></article>)}</div><div className="upload-modal-actions"><button className="secondary" disabled={busy} onClick={closeUploadQueue}>Annulla</button><button className="primary" disabled={busy} onClick={submitUploadQueue}>{busy ? "Caricamento…" : `Carica ${uploadQueue.length} ${uploadQueue.length === 1 ? "foto" : "foto"}`}</button></div></section></div>}
+    {selected && <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setSelected(null)}><button className="close-lightbox" aria-label="Chiudi anteprima" title="Chiudi anteprima" onClick={() => setSelected(null)}><X size={24}/></button><div className="lightbox-polaroid" onClick={e => e.stopPropagation()}><img src={selected.url} alt="Foto della laurea"/><div className="lightbox-caption">{selected.caption || "Un ricordo da conservare"}</div></div><p className="save-photo-hint" onClick={e => e.stopPropagation()}>Su iPhone, nel menu Condividi scorri le opzioni e tocca “Salva immagine”.</p><button className="download-photo" onClick={e => { e.stopPropagation(); savePhotoToDevice(selected); }}><Share size={16}/> Salva in Foto</button></div>}
   </main>;
 }
 

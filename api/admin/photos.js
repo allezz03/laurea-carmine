@@ -5,12 +5,12 @@ export default async function handler(req, res) {
   if (!checkAdmin(req)) return json(res, 401, { error: "Password organizzatore non valida." });
   try {
     const supabase = supabaseAdmin();
-    const { data, error } = await supabase.from("photos").select("id, storage_path, created_at, status, event").in("status", ["pending", "approved"]).order("created_at", { ascending: false }).limit(600);
+    const { data, error } = await supabase.from("photos").select("id, storage_path, created_at, status, event, caption").in("status", ["pending", "approved"]).order("created_at", { ascending: false }).limit(600);
     if (error) throw error;
     const photos = await Promise.all((data || []).map(async photo => {
       const { data: signed, error: signError } = await supabase.storage.from("laurea-photos").createSignedUrl(photo.storage_path, 60 * 60);
       if (signError) return null;
-      return { id: photo.id, url: signed.signedUrl, created_at: photo.created_at, status: photo.status, event: photo.event || "Festa" };
+      return { id: photo.id, url: signed.signedUrl, created_at: photo.created_at, status: photo.status, event: photo.event || "Festa", caption: photo.caption || "" };
     }));
     const available = photos.filter(Boolean);
     return json(res, 200, { photos: available, pending: available.filter(p => p.status === "pending"), approved: available.filter(p => p.status === "approved") });

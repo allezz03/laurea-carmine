@@ -81,3 +81,7 @@ La homepage offre due scelte: **Scatta una foto** (richiede il supporto del brow
 ## Attivare o disattivare la revisione delle foto
 
 La revisione è attiva per impostazione predefinita. Per abilitare il selettore nell'area organizzatore, esegui una sola volta `supabase_migration_review_setting.sql` nel SQL Editor di Supabase. Dall'area `/organizzatore` puoi quindi attivare o disattivare la revisione. Quando la disattivi, tutte le foto in attesa vengono approvate automaticamente e le nuove foto vengono pubblicate subito; quando la riattivi, i nuovi caricamenti tornano in attesa di approvazione.
+
+
+## Didascalie stile Polaroid
+Le persone possono aggiungere una didascalia facoltativa (max 180 caratteri) a ogni foto prima del caricamento. Per abilitare il campo nel database, eseguire `supabase_migration_photo_captions.sql` nel SQL Editor di Supabase. Le didascalie vengono mostrate sotto ogni foto nell’album e nell’anteprima.
