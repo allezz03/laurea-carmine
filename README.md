@@ -85,3 +85,6 @@ La revisione è attiva per impostazione predefinita. Per abilitare il selettore 
 
 ## Didascalie stile Polaroid
 Le persone possono aggiungere una didascalia facoltativa (max 180 caratteri) a ogni foto prima del caricamento. Per abilitare il campo nel database, eseguire `supabase_migration_photo_captions.sql` nel SQL Editor di Supabase. Le didascalie vengono mostrate sotto ogni foto nell’album e nell’anteprima.
+
+## Eliminazione multipla nell'area organizzatore
+Nella sezione **Foto già pubblicate** puoi selezionare singole foto oppure usare **Seleziona tutto**, quindi premere **Elimina selezionate**. L'app chiede conferma prima di eliminare definitivamente le immagini. L'endpoint dedicato verifica la password organizzatore e rimuove i record approvati selezionati e i relativi file dallo storage privato.

@@ -11,6 +11,7 @@ function App() {
   const [photos, setPhotos] = useState([]);
   const [pending, setPending] = useState([]);
   const [approved, setApproved] = useState([]);
+  const [selectedDeleteIds, setSelectedDeleteIds] = useState([]);
   const initialEvent = new URLSearchParams(window.location.search).get("evento");
   const [selectedEvent, setSelectedEvent] = useState(["Cena", "Festa"].includes(initialEvent) ? initialEvent : null);
   const [busy, setBusy] = useState(false);
@@ -276,6 +277,37 @@ function App() {
     finally { setAdminBusy(false); }
   }
 
+  function toggleDeleteSelection(id) {
+    setSelectedDeleteIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
+  }
+
+  function toggleSelectAllApproved() {
+    setSelectedDeleteIds(current => approved.length > 0 && approved.every(photo => current.includes(photo.id))
+      ? current.filter(id => !approved.some(photo => photo.id === id))
+      : [...new Set([...current, ...approved.map(photo => photo.id)])]);
+  }
+
+  async function deleteSelectedPhotos() {
+    const ids = selectedDeleteIds.filter(id => approved.some(photo => photo.id === id));
+    if (!ids.length) return;
+    if (!window.confirm(`Vuoi eliminare definitivamente ${ids.length} ${ids.length === 1 ? "foto" : "foto"}? Questa operazione non può essere annullata.`)) return;
+    setAdminBusy(true);
+    try {
+      const response = await fetch("/api/admin/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-password": adminPassword },
+        body: JSON.stringify({ ids })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Non è stato possibile eliminare le foto selezionate.");
+      setSelectedDeleteIds(current => current.filter(id => !ids.includes(id)));
+      await loadPending();
+      await loadGallery();
+      setNotice(`${data.deleted ?? ids.length} ${data.deleted === 1 ? "foto eliminata" : "foto eliminate"} definitivamente.`);
+    } catch (e) { setNotice(e.message || "Errore durante l'eliminazione multipla."); }
+    finally { setAdminBusy(false); }
+  }
+
   if (ADMIN_MODE) {
     return <main className="admin-shell">
       <header className="admin-top"><a className="brand" href="/"><span className="brand-mark">C</span><span>LAUREA DI <b>CARMINE</b></span></a><span className="admin-label"><LockKeyhole size={15}/> Area organizzatore</span></header>
@@ -298,13 +330,24 @@ function App() {
               <div className="pending-actions"><button className="approve" disabled={adminBusy} onClick={() => moderate(p.id, "approve")}><Check size={16}/> Approva</button><button className="reject" disabled={adminBusy} onClick={() => moderate(p.id, "reject")}><X size={16}/> Rifiuta</button></div>
             </article>)}</div>}
           <div className="pending-head published-head"><b>Foto già pubblicate ({approved.length})</b></div>
-          <p className="muted admin-help">Da qui puoi eliminare definitivamente una foto dall'album condiviso.</p>
-          {approved.length === 0 ? <div className="empty"><Images size={30}/><b>Nessuna foto pubblicata</b><span>Le foto approvate compariranno qui.</span></div> :
-            <div className="pending-grid">{approved.map(p => <article className="pending-item" key={p.id}>
-              <img src={p.url} alt="Foto già pubblicata"/>
-              <div className="photo-event-tag">{p.event}</div>
-              <div className="pending-actions"><button className="reject delete-photo" disabled={adminBusy} onClick={() => { if (window.confirm("Vuoi eliminare definitivamente questa foto?")) moderate(p.id, "delete"); }}><Trash2 size={16}/> Elimina</button></div>
-            </article>)}</div>}
+          <p className="muted admin-help">Seleziona una o più foto per eliminarle insieme dall'album condiviso.</p>
+          {approved.length === 0 ? <div className="empty"><Images size={30}/><b>Nessuna foto pubblicata</b><span>Le foto approvate compariranno qui.</span></div> : <>
+            <div className="bulk-delete-toolbar">
+              <button className="secondary" disabled={adminBusy} onClick={toggleSelectAllApproved}>{approved.length > 0 && approved.every(photo => selectedDeleteIds.includes(photo.id)) ? "Deseleziona tutte" : "Seleziona tutto"}</button>
+              <span>{selectedDeleteIds.filter(id => approved.some(photo => photo.id === id)).length} selezionate</span>
+              <button className="reject" disabled={adminBusy || !selectedDeleteIds.some(id => approved.some(photo => photo.id === id))} onClick={deleteSelectedPhotos}><Trash2 size={16}/> Elimina selezionate</button>
+            </div>
+            <div className="pending-grid">{approved.map(p => {
+              const isChosen = selectedDeleteIds.includes(p.id);
+              return <article className={`pending-item ${isChosen ? "pending-item-selected" : ""}`} key={p.id}>
+                <button type="button" className={`admin-photo-select ${isChosen ? "is-selected" : ""}`} aria-pressed={isChosen} aria-label={isChosen ? "Deseleziona foto" : "Seleziona foto"} onClick={() => toggleDeleteSelection(p.id)} disabled={adminBusy}>
+                  <img src={p.url} alt="Foto già pubblicata"/><span className="admin-photo-check">{isChosen ? "✓" : ""}</span>
+                </button>
+                <div className="photo-event-tag">{p.event}</div>
+                <div className="pending-actions"><button className="reject delete-photo" disabled={adminBusy} onClick={() => { if (window.confirm("Vuoi eliminare definitivamente questa foto?")) moderate(p.id, "delete"); }}><Trash2 size={16}/> Elimina</button></div>
+              </article>;
+            })}</div>
+          </>}
           <button className="secondary full logout" onClick={() => { setAuthenticated(false); setPending([]); setApproved([]); setAdminPassword(""); }}>Esci dall'area organizzatore</button>
         </>}
         {notice && <p className="notice" role="status">{notice}</p>}
