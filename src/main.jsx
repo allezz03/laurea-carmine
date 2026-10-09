@@ -5,7 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import "./styles.css";
 
 const APP_URL = import.meta.env.VITE_PUBLIC_APP_URL || window.location.origin;
-const ADMIN_MODE = window.location.pathname.replace(/\\/$/, "") === "/organizzatore" || new URLSearchParams(window.location.search).get("admin") === "1";
+const ADMIN_MODE = window.location.pathname.replace(/\/$/, "") === "/organizzatore" || new URLSearchParams(window.location.search).get("admin") === "1";
 
 function App() {
   const [photos, setPhotos] = useState([]);
