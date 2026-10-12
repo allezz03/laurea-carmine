@@ -96,3 +96,7 @@ Prima del deploy, eseguire `supabase_migration_videos.sql` nel SQL Editor del pr
 I video vengono caricati direttamente su Supabase Storage usando un URL di caricamento firmato generato lato server: il file non passa attraverso una Vercel Function, evitando il limite di 4,5 MB del body delle Functions. La web app accetta video fino a 180 secondi e 50 MiB, mostra una didascalia facoltativa e rispetta l'impostazione di revisione. I video approvati sono riproducibili nella galleria; l'area organizzatore permette approvazione, rifiuto ed eliminazione anche dei video. Il download multiplo resta dedicato alle foto; i video si scaricano singolarmente.
 
 Nota: il limite di 50 MiB è compatibile con il massimo del piano Supabase Free, ma il bucket deve avere un limite globale almeno pari a 50 MiB. Per video sopra i 6 MB Supabase raccomanda upload resumable TUS per una maggiore affidabilità su connessioni instabili; questa prima versione usa un upload diretto firmato standard, quindi un'interruzione può richiedere di ripetere il caricamento.
+
+
+## Impostazioni link Cena e Festa
+Nell'area `/organizzatore`, dopo l'accesso, puoi abilitare o disabilitare separatamente i link Cena e Festa. Le impostazioni vengono salvate nella tabella `app_settings` già usata per la revisione; non serve una nuova migrazione se la migrazione della revisione è stata eseguita. I link disabilitati vengono nascosti dalla pagina iniziale e l'accesso diretto all'album/caricamento viene bloccato.

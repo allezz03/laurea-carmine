@@ -20,6 +20,7 @@ function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [adminBusy, setAdminBusy] = useState(false);
   const [reviewEnabled, setReviewEnabled] = useState(true);
+  const [eventLinks, setEventLinks] = useState({ Cena: true, Festa: true });
   const [selected, setSelected] = useState(null);
   const [showQrZoom, setShowQrZoom] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -233,10 +234,24 @@ function App() {
     const reviewData = await reviewResponse.json();
     if (!reviewResponse.ok) throw new Error(reviewData.error || "Non riesco a leggere l'impostazione di revisione.");
     setReviewEnabled(reviewData.reviewEnabled !== false);
+    const linksResponse = await fetch("/api/admin/event-links", { headers: { "x-admin-password": password } });
+    const linksData = await linksResponse.json();
+    if (!linksResponse.ok) throw new Error(linksData.error || "Non riesco a leggere lo stato dei link degli album.");
+    setEventLinks(linksData.eventLinks || { Cena: true, Festa: true });
     setAuthenticated(true);
   }
   useEffect(() => {
     fetch("/api/review-status").then(r => r.json()).then(data => setReviewEnabled(data.reviewEnabled !== false)).catch(() => {});
+    fetch("/api/event-links-status").then(r => r.json()).then(data => {
+      const links = data.eventLinks || { Cena: true, Festa: true };
+      setEventLinks(links);
+      const requestedEvent = new URLSearchParams(window.location.search).get("evento");
+      if (["Cena", "Festa"].includes(requestedEvent) && links[requestedEvent] === false) {
+        setSelectedEvent(null);
+        window.history.replaceState({}, "", window.location.pathname);
+        setNotice("Questo album al momento non è disponibile.");
+      }
+    }).catch(() => {});
   }, []);
   useEffect(() => {
     if (selectedEvent) loadGallery(selectedEvent);
@@ -297,6 +312,22 @@ function App() {
       else setNotice(success === 1 ? "Foto inviata! Comparirà nell'album dopo l'approvazione." : `${success} foto inviate! Compariranno nell'album dopo l'approvazione.`);
       await loadGallery();
     }
+  }
+
+  async function toggleEventLink(eventName) {
+    const nextLinks = { ...eventLinks, [eventName]: !eventLinks[eventName] };
+    setAdminBusy(true);
+    try {
+      const response = await fetch("/api/admin/event-links", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-admin-password": adminPassword },
+        body: JSON.stringify({ eventLinks: nextLinks })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Non è stato possibile aggiornare il link.");
+      setEventLinks(data.eventLinks);
+      setNotice(`Link ${eventName}: ${data.eventLinks[eventName] ? "abilitato" : "disabilitato"}.`);
+    } catch (e) { setNotice(e.message || "Errore durante l'aggiornamento del link."); }
+    finally { setAdminBusy(false); }
   }
 
   async function toggleReview() {
@@ -383,6 +414,14 @@ function App() {
             <div><b>Revisione foto: {reviewEnabled ? "ATTIVA" : "DISATTIVATA"}</b><span>{reviewEnabled ? "Le nuove foto aspettano la tua approvazione." : "Le nuove foto vengono pubblicate subito."}</span></div>
             <button className={reviewEnabled ? "secondary" : "primary"} disabled={adminBusy} onClick={toggleReview}>{reviewEnabled ? "Disattiva revisione" : "Attiva revisione"}</button>
           </div>
+          <section className="event-links-setting">
+            <h2>Link degli album</h2>
+            <p>Puoi nascondere temporaneamente Cena o Festa dalla pagina iniziale. Il link diretto all'album viene bloccato finché non lo riattivi.</p>
+            {(["Cena", "Festa"]).map(eventName => <div className="event-link-row" key={eventName}>
+              <div><b>{eventName}</b><span>{eventLinks[eventName] ? "Visibile agli invitati" : "Nascosto e non accessibile"}</span></div>
+              <button className={eventLinks[eventName] ? "secondary" : "primary"} disabled={adminBusy} onClick={() => toggleEventLink(eventName)}>{eventLinks[eventName] ? "Disabilita link" : "Abilita link"}</button>
+            </div>)}
+          </section>
           <div className="pending-head"><b>{pending.length} foto in attesa di approvazione</b><button className="icon-button" onClick={() => loadPending().catch(e => setNotice(e.message))} aria-label="Aggiorna"><RefreshCw size={17}/></button></div>
           {pending.length === 0 ? <div className="empty"><ShieldCheck size={32}/><b>Tutto aggiornato</b><span>Non ci sono contenuti da approvare.</span></div> :
             <div className="pending-grid">{pending.map(p => <article className="pending-item" key={p.id}>
@@ -426,8 +465,9 @@ function App() {
         <h1>Laurea di <em>Carmine</em></h1>
         <p className="hero-subtitle">Scegli l'album da esplorare</p>
         <div className="event-choice-grid">
-          <button className="event-choice" onClick={() => { setSelectedEvent("Cena"); window.history.replaceState({}, "", `${window.location.pathname}?evento=Cena`); }}><span className="event-choice-icon"><Utensils size={27}/></span><strong>Cena</strong><small>Foto e ricordi della cena</small><span className="event-choice-arrow">Apri album →</span></button>
-          <button className="event-choice" onClick={() => { setSelectedEvent("Festa"); window.history.replaceState({}, "", `${window.location.pathname}?evento=Festa`); }}><span className="event-choice-icon"><PartyPopper size={27}/></span><strong>Festa</strong><small>Foto e ricordi della festa</small><span className="event-choice-arrow">Apri album →</span></button>
+          {eventLinks.Cena && <button className="event-choice" onClick={() => { setSelectedEvent("Cena"); window.history.replaceState({}, "", `${window.location.pathname}?evento=Cena`); }}><span className="event-choice-icon"><Utensils size={27}/></span><strong>Cena</strong><small>Foto e ricordi della cena</small><span className="event-choice-arrow">Apri album →</span></button>}
+          {eventLinks.Festa && <button className="event-choice" onClick={() => { setSelectedEvent("Festa"); window.history.replaceState({}, "", `${window.location.pathname}?evento=Festa`); }}><span className="event-choice-icon"><PartyPopper size={27}/></span><strong>Festa</strong><small>Foto e ricordi della festa</small><span className="event-choice-arrow">Apri album →</span></button>}
+          {!eventLinks.Cena && !eventLinks.Festa && <p className="all-events-disabled">Gli album non sono momentaneamente disponibili.</p>}
         </div>
         <p className="event-picker-note"><LockKeyhole size={13}/> {reviewEnabled ? "Le foto vengono pubblicate solo dopo approvazione." : "Le foto vengono pubblicate subito."}</p>
       </section>

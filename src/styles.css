@@ -81,3 +81,16 @@
 .upload-modal #video-caption{width:100%;min-height:62px;resize:vertical;padding:10px;border:1px solid #d9c7bd;border-radius:5px;background:#fffdf9;color:var(--ink);font:13px/1.4 'DM Sans',sans-serif;margin:8px 0}
 .upload-modal>small{display:block;text-align:right;color:var(--muted);font-size:10px}
 .lightbox-video{display:block;width:min(86vw,900px);max-height:calc(100vh - 280px);background:#10070b;object-fit:contain}
+
+/* iPhone notch / Dynamic Island: keep the top navigation below the safe area. */
+.topbar,.admin-top{padding-top:env(safe-area-inset-top, 0px);height:calc(72px + env(safe-area-inset-top, 0px));min-height:calc(72px + env(safe-area-inset-top, 0px));}
+.admin-top{padding-left:max(18px, env(safe-area-inset-left, 0px));padding-right:max(18px, env(safe-area-inset-right, 0px));}
+.topbar{padding-left:max(clamp(18px,5vw,72px), env(safe-area-inset-left, 0px));padding-right:max(clamp(18px,5vw,72px), env(safe-area-inset-right, 0px));}
+.event-links-setting{margin:24px 0;padding:18px;background:#f7eee5;border:1px solid var(--line);border-radius:8px;}
+.event-links-setting h2{margin:0 0 6px;color:var(--wine);font:500 22px 'Playfair Display',serif;}
+.event-links-setting>p{margin:0 0 14px;color:var(--muted);font-size:12px;line-height:1.5;}
+.event-link-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line);}
+.event-link-row>div{display:grid;gap:4px;color:var(--wine);font-size:13px;}
+.event-link-row span{font-size:11px;color:var(--muted);}
+.all-events-disabled{grid-column:1/-1;color:#fff7ed;font-size:14px;}
+@media(max-width:700px){.topbar,.admin-top{height:calc(62px + env(safe-area-inset-top, 0px));min-height:calc(62px + env(safe-area-inset-top, 0px));padding-top:env(safe-area-inset-top, 0px);}.event-link-row{align-items:flex-start;}.event-link-row button{flex-shrink:0;font-size:11px;padding:11px 10px;}}
