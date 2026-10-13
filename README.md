@@ -100,3 +100,13 @@ Nota: il limite di 50 MiB è compatibile con il massimo del piano Supabase Free,
 
 ## Impostazioni link Cena e Festa
 Nell'area `/organizzatore`, dopo l'accesso, puoi abilitare o disabilitare separatamente i link Cena e Festa. Le impostazioni vengono salvate come righe boolean separate (`event_link_cena` e `event_link_festa`) nella tabella `app_settings` già usata per la revisione; non serve una nuova migrazione se la migrazione della revisione è stata eseguita. I link disabilitati vengono nascosti dalla pagina iniziale e l'accesso diretto all'album/caricamento viene bloccato.
+
+
+## Password per album e nuovo evento Proclamazione
+
+1. Nel progetto Supabase esegui una volta `supabase_migration_password_proclamazione.sql` nel SQL Editor. La migrazione aggiunge il nuovo evento e la tabella privata `album_passwords`; non elimina foto esistenti.
+2. In Vercel aggiungi la variabile d'ambiente `ALBUM_ACCESS_SECRET` con una stringa casuale lunga (almeno 32 caratteri) e ridistribuisci il progetto. Se non viene configurata, l'accesso password non funziona.
+3. Entra in `/organizzatore`, accedi e imposta password diverse (almeno 6 caratteri) per Cena, Festa e Proclamazione.
+4. Il token d'accesso è valido 12 ore nel browser che ha effettuato l'accesso. Le API di galleria, upload, video e download verificano il token dell'evento.
+
+Le password vengono salvate come hash scrypt con salt, non in chiaro. Le nuove impostazioni di link sono indipendenti per i tre eventi.

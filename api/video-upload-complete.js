@@ -1,12 +1,14 @@
+import { requireAlbum, validEvent } from "./_album-auth.js";
 import { supabaseAdmin, json, methodNotAllowed } from "./_supabase.js";
 
 const ALLOWED = new Set(["video/mp4", "video/quicktime", "video/webm"]);
 export default async function handler(req, res) {
   if (req.method !== "POST") return methodNotAllowed(res, ["POST"]);
   const { id, path, event, mimeType, size, caption } = req.body || {};
-  if (typeof id !== "string" || !/^[0-9a-f-]{36}\.(mp4|mov|webm)$/i.test(path || "") || !path.startsWith(id + ".") || !["Cena", "Festa"].includes(event) || !ALLOWED.has(mimeType) || !Number.isFinite(size) || size <= 0 || size > 50 * 1024 * 1024) {
+  if (typeof id !== "string" || !/^[0-9a-f-]{36}\.(mp4|mov|webm)$/i.test(path || "") || !path.startsWith(id + ".") || !validEvent(event) || !ALLOWED.has(mimeType) || !Number.isFinite(size) || size <= 0 || size > 50 * 1024 * 1024) {
     return json(res, 400, { error: "Dati del video non validi." });
   }
+  if (!requireAlbum(req, event)) return json(res, 401, { error: "Inserisci la password per accedere a questo album." });
   try {
     const supabase = supabaseAdmin();
     // Verify that the signed upload actually created the object, without proxying the video through Vercel.

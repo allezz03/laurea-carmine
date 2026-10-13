@@ -1,3 +1,4 @@
+import { requireAlbum, validEvent } from "./_album-auth.js";
 import Busboy from "busboy";
 import { randomUUID } from "node:crypto";
 import { supabaseAdmin, json, methodNotAllowed } from "./_supabase.js";
@@ -16,7 +17,7 @@ export default async function handler(req, res) {
   try {
     await new Promise((resolve, reject) => {
       const bb = Busboy({ headers: req.headers, limits: { files: 1, fileSize: MAX_BYTES } });
-      bb.on("field", (name, value) => { if (name === "event" && ["Cena", "Festa"].includes(value)) eventName = value;
+      bb.on("field", (name, value) => { if (name === "event" && validEvent(value)) eventName = value;
         if (name === "caption") caption = String(value || "").trim().slice(0, 180); });
       bb.on("file", (_name, stream, info) => {
         mimeType = info.mimeType;
@@ -29,6 +30,7 @@ export default async function handler(req, res) {
       bb.on("finish", resolve);
       req.pipe(bb);
     });
+    if (!requireAlbum(req, eventName)) return json(res, 401, { error: "Inserisci la password per accedere a questo album." });
     if (!fileBuffer?.length) return json(res, 400, { error: "Non è stata ricevuta nessuna foto." });
     if (tooLarge || fileBuffer.length > MAX_BYTES) return json(res, 413, { error: "La foto supera il limite di 12 MB." });
     const ext = MIME_EXT[mimeType];

@@ -1,15 +1,17 @@
 import { supabaseAdmin, json, checkAdmin, methodNotAllowed } from "../_supabase.js";
 
-const DEFAULT_LINKS = { Cena: true, Festa: true };
+const EVENTS = ["Cena", "Festa", "Proclamazione"];
+const DEFAULT_LINKS = { Cena: true, Festa: true, Proclamazione: true };
 const settingKey = (eventName) => `event_link_${eventName.toLowerCase()}`;
 
 async function readLinks(supabase) {
-  const { data, error } = await supabase.from("app_settings").select("key,value").in("key", [settingKey("Cena"), settingKey("Festa")]);
+  const { data, error } = await supabase.from("app_settings").select("key,value").in("key", EVENTS.map(settingKey));
   if (error) throw error;
   const values = Object.fromEntries((data || []).map(row => [row.key, row.value]));
   return {
     Cena: values[settingKey("Cena")] !== false,
     Festa: values[settingKey("Festa")] !== false,
+    Proclamazione: values[settingKey("Proclamazione")] !== false,
   };
 }
 
@@ -25,11 +27,12 @@ export default async function handler(req, res) {
   }
   if (req.method !== "POST") return methodNotAllowed(res, ["GET", "POST"]);
   const links = req.body?.eventLinks;
-  if (!links || typeof links.Cena !== "boolean" || typeof links.Festa !== "boolean") return json(res, 400, { error: "Impostazione dei link non valida." });
+  if (!links || typeof links.Cena !== "boolean" || typeof links.Festa !== "boolean" || typeof links.Proclamazione !== "boolean") return json(res, 400, { error: "Impostazione dei link non valida." });
   try {
     const rows = [
       { key: settingKey("Cena"), value: links.Cena, updated_at: new Date().toISOString() },
       { key: settingKey("Festa"), value: links.Festa, updated_at: new Date().toISOString() },
+      { key: settingKey("Proclamazione"), value: links.Proclamazione, updated_at: new Date().toISOString() },
     ];
     const { error } = await supabase.from("app_settings").upsert(rows, { onConflict: "key" });
     if (error) throw error;

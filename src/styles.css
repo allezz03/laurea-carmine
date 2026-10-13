@@ -94,3 +94,14 @@
 .event-link-row span{font-size:11px;color:var(--muted);}
 .all-events-disabled{grid-column:1/-1;color:#fff7ed;font-size:14px;}
 @media(max-width:700px){.topbar,.admin-top{height:calc(62px + env(safe-area-inset-top, 0px));min-height:calc(62px + env(safe-area-inset-top, 0px));padding-top:env(safe-area-inset-top, 0px);}.event-link-row{align-items:flex-start;}.event-link-row button{flex-shrink:0;font-size:11px;padding:11px 10px;}}
+
+
+/* Accesso con password per singolo album e impostazioni password nell'area organizzatore */
+.album-password-form { width: min(100%, 420px); margin: 26px auto 0; display: grid; gap: 12px; text-align: left; }
+.album-password-form input, .password-row input { width: 100%; min-width: 0; box-sizing: border-box; }
+.password-gate { max-width: 720px; }
+.password-row { align-items: center; flex-wrap: wrap; }
+.password-row > div { min-width: 150px; }
+.password-row input { flex: 1 1 220px; }
+.password-row button { flex: 0 0 auto; }
+@media (max-width: 600px) { .password-row { align-items: stretch; } .password-row > div, .password-row input, .password-row button { width: 100%; } }

@@ -1,10 +1,12 @@
+import { requireAlbum, validEvent } from "./_album-auth.js";
 import { supabaseAdmin, json, methodNotAllowed } from "./_supabase.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return methodNotAllowed(res, ["GET"]);
   try {
     const eventName = req.query?.event;
-    if (!["Cena", "Festa"].includes(eventName)) return json(res, 400, { error: "Seleziona un album valido." });
+    if (!validEvent(eventName)) return json(res, 400, { error: "Seleziona un album valido." });
+    if (!requireAlbum(req, eventName)) return json(res, 401, { error: "Inserisci la password per accedere a questo album." });
     const supabase = supabaseAdmin();
     const { data: linkSetting, error: linkSettingError } = await supabase.from("app_settings").select("value").eq("key", `event_link_${eventName.toLowerCase()}`).maybeSingle();
     if (!linkSettingError && linkSetting && linkSetting.value === false) return json(res, 403, { error: "Questo album al momento non è disponibile." });

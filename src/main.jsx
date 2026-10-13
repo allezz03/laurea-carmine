@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, ArrowLeft, Utensils, PartyPopper, Video, Play } from "lucide-react";
+import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, ArrowLeft, Utensils, PartyPopper, Video, Play, GraduationCap } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import "./styles.css";
 
@@ -13,14 +13,18 @@ function App() {
   const [approved, setApproved] = useState([]);
   const [selectedDeleteIds, setSelectedDeleteIds] = useState([]);
   const initialEvent = new URLSearchParams(window.location.search).get("evento");
-  const [selectedEvent, setSelectedEvent] = useState(["Cena", "Festa"].includes(initialEvent) ? initialEvent : null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [passwordPromptEvent, setPasswordPromptEvent] = useState(["Cena", "Festa", "Proclamazione"].includes(initialEvent) ? initialEvent : null);
+  const [albumPassword, setAlbumPassword] = useState("");
+  const [passwordConfigured, setPasswordConfigured] = useState({ Cena: false, Festa: false, Proclamazione: false });
+  const [newAlbumPasswords, setNewAlbumPasswords] = useState({ Cena: "", Festa: "", Proclamazione: "" });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [adminBusy, setAdminBusy] = useState(false);
   const [reviewEnabled, setReviewEnabled] = useState(true);
-  const [eventLinks, setEventLinks] = useState({ Cena: true, Festa: true });
+  const [eventLinks, setEventLinks] = useState({ Cena: true, Festa: true, Proclamazione: true });
   const [selected, setSelected] = useState(null);
   const [showQrZoom, setShowQrZoom] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
@@ -36,14 +40,15 @@ function App() {
   async function loadGallery(eventName = selectedEvent) {
     if (!eventName) { setPhotos([]); return; }
     try {
-      const response = await fetch(`/api/gallery?event=${encodeURIComponent(eventName)}`);
+      const response = await fetch(`/api/gallery?event=${encodeURIComponent(eventName)}`, { headers: { "x-album-token": localStorage.getItem(`album-token-${eventName}`) || "" } });
       const data = await response.json();
       if (response.ok) setPhotos(data.photos || []);
     } catch { /* network can be temporarily unavailable */ }
   }
   async function savePhotoToDevice(photo) {
     const fileName = `laurea-carmine-${(photo.event || selectedEvent || "foto").toLowerCase()}-${photo.id}.jpg`;
-    const downloadUrl = `/api/download?id=${encodeURIComponent(photo.id)}`;
+    const token = localStorage.getItem(`album-token-${photo.event || selectedEvent}`) || "";
+    const downloadUrl = `/api/download?id=${encodeURIComponent(photo.id)}&token=${encodeURIComponent(token)}`;
     try {
       // On iPhone/iPad and supported Android browsers, share the actual image file.
       // The native share sheet lets the guest choose "Save Image" / "Save to Photos".
@@ -129,7 +134,8 @@ function App() {
       for (let i = 0; i < batch.length; i++) {
         const photo = batch[i];
         setNotice(`Preparo la foto ${i + 1} di ${batch.length}…`);
-        const response = await fetch(`/api/download?id=${encodeURIComponent(photo.id)}`);
+        const token = localStorage.getItem(`album-token-${photo.event || selectedEvent}`) || "";
+        const response = await fetch(`/api/download?id=${encodeURIComponent(photo.id)}&token=${encodeURIComponent(token)}`);
         if (!response.ok) throw new Error(`Non è stato possibile preparare la foto ${i + 1}.`);
         const blob = await response.blob();
         const mime = blob.type || "image/jpeg";
@@ -199,7 +205,7 @@ function App() {
     try {
       setNotice("Preparo il caricamento sicuro del video…");
       const request = await fetch("/api/video-upload-url", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json", "x-album-token": localStorage.getItem(`album-token-${selectedEvent}`) || "" },
         body: JSON.stringify({ event: selectedEvent || "Festa", mimeType: videoDraft.file.type, size: videoDraft.file.size, caption: videoCaption })
       });
       const uploadInfo = await request.json();
@@ -211,7 +217,7 @@ function App() {
         throw new Error(detail.includes("Payload Too Large") ? "Il video supera il limite consentito da Supabase Storage." : "Caricamento del video non riuscito. Controlla la connessione e riprova.");
       }
       const completed = await fetch("/api/video-upload-complete", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json", "x-album-token": localStorage.getItem(`album-token-${selectedEvent}`) || "" },
         body: JSON.stringify({ id: uploadInfo.id, path: uploadInfo.path, event: uploadInfo.event, mimeType: uploadInfo.mimeType, size: uploadInfo.size, caption: uploadInfo.caption })
       });
       const result = await completed.json();
@@ -237,17 +243,21 @@ function App() {
     const linksResponse = await fetch("/api/admin/event-links", { headers: { "x-admin-password": password } });
     const linksData = await linksResponse.json();
     if (!linksResponse.ok) throw new Error(linksData.error || "Non riesco a leggere lo stato dei link degli album.");
-    setEventLinks(linksData.eventLinks || { Cena: true, Festa: true });
+    setEventLinks(linksData.eventLinks || { Cena: true, Festa: true, Proclamazione: true });
+    const passResponse = await fetch("/api/admin/event-passwords", { headers: { "x-admin-password": password } });
+    const passData = await passResponse.json();
+    if (!passResponse.ok) throw new Error(passData.error || "Non riesco a leggere le password degli album.");
+    setPasswordConfigured(passData.configured || { Cena: false, Festa: false, Proclamazione: false });
     setAuthenticated(true);
   }
   useEffect(() => {
     fetch("/api/review-status").then(r => r.json()).then(data => setReviewEnabled(data.reviewEnabled !== false)).catch(() => {});
     fetch("/api/event-links-status").then(r => r.json()).then(data => {
-      const links = data.eventLinks || { Cena: true, Festa: true };
+      const links = data.eventLinks || { Cena: true, Festa: true, Proclamazione: true };
       setEventLinks(links);
       const requestedEvent = new URLSearchParams(window.location.search).get("evento");
-      if (["Cena", "Festa"].includes(requestedEvent) && links[requestedEvent] === false) {
-        setSelectedEvent(null);
+      if (["Cena", "Festa", "Proclamazione"].includes(requestedEvent) && links[requestedEvent] === false) {
+        setPasswordPromptEvent(null); setSelectedEvent(null);
         window.history.replaceState({}, "", window.location.pathname);
         setNotice("Questo album al momento non è disponibile.");
       }
@@ -294,7 +304,7 @@ function App() {
         form.append("event", selectedEvent || "Festa");
         form.append("caption", item.caption.trim().slice(0, 180));
         form.append("photo", item.file);
-        const response = await fetch("/api/upload", { method: "POST", body: form });
+        const response = await fetch("/api/upload", { method: "POST", headers: { "x-album-token": localStorage.getItem(`album-token-${selectedEvent}`) || "" }, body: form });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Caricamento non riuscito.");
         success++;
@@ -312,6 +322,39 @@ function App() {
       else setNotice(success === 1 ? "Foto inviata! Comparirà nell'album dopo l'approvazione." : `${success} foto inviate! Compariranno nell'album dopo l'approvazione.`);
       await loadGallery();
     }
+  }
+
+  async function enterAlbum(eventName) {
+    setNotice("");
+    const saved = localStorage.getItem(`album-token-${eventName}`);
+    if (saved) {
+      const check = await fetch(`/api/gallery?event=${encodeURIComponent(eventName)}`, { headers: { "x-album-token": saved } });
+      if (check.ok) { setSelectedEvent(eventName); setPasswordPromptEvent(null); setAlbumPassword(""); window.history.replaceState({}, "", `${window.location.pathname}?evento=${encodeURIComponent(eventName)}`); return; }
+      localStorage.removeItem(`album-token-${eventName}`);
+    }
+    setPasswordPromptEvent(eventName); setAlbumPassword("");
+  }
+  async function submitAlbumPassword(e) {
+    e.preventDefault();
+    try {
+      const response = await fetch("/api/event-access", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event: passwordPromptEvent, password: albumPassword }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Password non corretta.");
+      localStorage.setItem(`album-token-${passwordPromptEvent}`, data.token);
+      setSelectedEvent(passwordPromptEvent); setPasswordPromptEvent(null); setAlbumPassword("");
+      window.history.replaceState({}, "", `${window.location.pathname}?evento=${encodeURIComponent(data.event)}`);
+      setNotice("");
+    } catch (error) { setNotice(error.message || "Non è stato possibile accedere all'album."); }
+  }
+  async function saveAlbumPassword(eventName) {
+    const password = newAlbumPasswords[eventName] || "";
+    if (password.length < 6) { setNotice("La password deve contenere almeno 6 caratteri."); return; }
+    setAdminBusy(true);
+    try {
+      const response = await fetch("/api/admin/event-passwords", { method: "POST", headers: { "Content-Type": "application/json", "x-admin-password": adminPassword }, body: JSON.stringify({ event: eventName, password }) });
+      const data = await response.json(); if (!response.ok) throw new Error(data.error || "Non è stato possibile salvare la password.");
+      setPasswordConfigured(prev => ({ ...prev, [eventName]: true })); setNewAlbumPasswords(prev => ({ ...prev, [eventName]: "" })); setNotice(`Password di ${eventName} aggiornata.`);
+    } catch (error) { setNotice(error.message); } finally { setAdminBusy(false); }
   }
 
   async function toggleEventLink(eventName) {
@@ -416,11 +459,16 @@ function App() {
           </div>
           <section className="event-links-setting">
             <h2>Link degli album</h2>
-            <p>Puoi nascondere temporaneamente Cena o Festa dalla pagina iniziale. Il link diretto all'album viene bloccato finché non lo riattivi.</p>
-            {(["Cena", "Festa"]).map(eventName => <div className="event-link-row" key={eventName}>
+            <p>Puoi nascondere temporaneamente ciascun evento dalla pagina iniziale. Il link diretto all'album viene bloccato finché non lo riattivi.</p>
+            {(["Cena", "Festa", "Proclamazione"]).map(eventName => <div className="event-link-row" key={eventName}>
               <div><b>{eventName}</b><span>{eventLinks[eventName] ? "Visibile agli invitati" : "Nascosto e non accessibile"}</span></div>
               <button className={eventLinks[eventName] ? "secondary" : "primary"} disabled={adminBusy} onClick={() => toggleEventLink(eventName)}>{eventLinks[eventName] ? "Disabilita link" : "Abilita link"}</button>
             </div>)}
+          </section>
+          <section className="event-links-setting">
+            <h2>Password degli album</h2>
+            <p>Imposta una password diversa per ogni evento. Gli invitati potranno accedere solo all'album per cui conoscono la password.</p>
+            {["Cena", "Festa", "Proclamazione"].map(eventName => <div className="event-link-row password-row" key={`password-${eventName}`}><div><b>{eventName}</b><span>{passwordConfigured[eventName] ? "Password configurata" : "Password non ancora configurata"}</span></div><input type="password" minLength={6} maxLength={100} placeholder="Nuova password (min. 6 caratteri)" value={newAlbumPasswords[eventName]} onChange={e => setNewAlbumPasswords(prev => ({ ...prev, [eventName]: e.target.value }))}/><button className="primary" disabled={adminBusy || newAlbumPasswords[eventName].length < 6} onClick={() => saveAlbumPassword(eventName)}>Salva password</button></div>)}
           </section>
           <div className="pending-head"><b>{pending.length} foto in attesa di approvazione</b><button className="icon-button" onClick={() => loadPending().catch(e => setNotice(e.message))} aria-label="Aggiorna"><RefreshCw size={17}/></button></div>
           {pending.length === 0 ? <div className="empty"><ShieldCheck size={32}/><b>Tutto aggiornato</b><span>Non ci sono contenuti da approvare.</span></div> :
@@ -456,6 +504,10 @@ function App() {
     </main>;
   }
 
+  if (!selectedEvent && passwordPromptEvent) {
+    return <main className="event-picker-page"><nav className="topbar event-picker-topbar"><a className="brand" href="/" onClick={e => { e.preventDefault(); setPasswordPromptEvent(null); window.history.replaceState({}, "", window.location.pathname); }}><span className="brand-mark">C</span><span>LAUREA DI <b>CARMINE</b></span></a></nav><section className="event-picker password-gate"><div className="laurel"><LockKeyhole size={28}/></div><span className="eyebrow">ACCESSO RISERVATO</span><h1>Album <em>{passwordPromptEvent}</em></h1><p className="hero-subtitle">Inserisci la password ricevuta per accedere a questo evento.</p><form onSubmit={submitAlbumPassword} className="album-password-form"><label htmlFor="album-password">Password {passwordPromptEvent}</label><input id="album-password" type="password" value={albumPassword} onChange={e => setAlbumPassword(e.target.value)} autoComplete="current-password" required/><button className="primary full" type="submit">Accedi all'album</button><button className="secondary full" type="button" onClick={() => { setPasswordPromptEvent(null); setNotice(""); window.history.replaceState({}, "", window.location.pathname); }}>Torna agli eventi</button>{notice && <p className="notice" role="alert">{notice}</p>}</form></section><footer className="footer"><span className="footer-mark">C</span><p>Fatto con <Heart size={13} fill="currentColor"/> per Carmine</p></footer></main>;
+  }
+
   if (!selectedEvent) {
     return <main className="event-picker-page">
       <nav className="topbar event-picker-topbar"><a className="brand" href="/"><span className="brand-mark">C</span><span>LAUREA DI <b>CARMINE</b></span></a><a className="nav-link organizer-top-link" href="/organizzatore"><LockKeyhole size={15}/> Area organizzatore</a></nav>
@@ -465,9 +517,10 @@ function App() {
         <h1>Laurea di <em>Carmine</em></h1>
         <p className="hero-subtitle">Scegli l'album da esplorare</p>
         <div className="event-choice-grid">
-          {eventLinks.Cena && <button className="event-choice" onClick={() => { setSelectedEvent("Cena"); window.history.replaceState({}, "", `${window.location.pathname}?evento=Cena`); }}><span className="event-choice-icon"><Utensils size={27}/></span><strong>Cena</strong><small>Foto e ricordi della cena</small><span className="event-choice-arrow">Apri album →</span></button>}
-          {eventLinks.Festa && <button className="event-choice" onClick={() => { setSelectedEvent("Festa"); window.history.replaceState({}, "", `${window.location.pathname}?evento=Festa`); }}><span className="event-choice-icon"><PartyPopper size={27}/></span><strong>Festa</strong><small>Foto e ricordi della festa</small><span className="event-choice-arrow">Apri album →</span></button>}
-          {!eventLinks.Cena && !eventLinks.Festa && <p className="all-events-disabled">Gli album non sono momentaneamente disponibili.</p>}
+          {eventLinks.Cena && <button className="event-choice" onClick={() => enterAlbum("Cena")}><span className="event-choice-icon"><Utensils size={27}/></span><strong>Cena</strong><small>Foto e ricordi della cena</small><span className="event-choice-arrow">Apri album →</span></button>}
+          {eventLinks.Festa && <button className="event-choice" onClick={() => enterAlbum("Festa")}><span className="event-choice-icon"><PartyPopper size={27}/></span><strong>Festa</strong><small>Foto e ricordi della festa</small><span className="event-choice-arrow">Apri album →</span></button>}
+          {eventLinks.Proclamazione && <button className="event-choice" onClick={() => enterAlbum("Proclamazione")}><span className="event-choice-icon"><GraduationCap size={27}/></span><strong>Proclamazione</strong><small>Foto e ricordi della proclamazione</small><span className="event-choice-arrow">Apri album →</span></button>}
+          {!eventLinks.Cena && !eventLinks.Festa && !eventLinks.Proclamazione && <p className="all-events-disabled">Gli album non sono momentaneamente disponibili.</p>}
         </div>
         <p className="event-picker-note"><LockKeyhole size={13}/> {reviewEnabled ? "Le foto vengono pubblicate solo dopo approvazione." : "Le foto vengono pubblicate subito."}</p>
       </section>
