@@ -110,3 +110,8 @@ Nell'area `/organizzatore`, dopo l'accesso, puoi abilitare o disabilitare separa
 4. Il token d'accesso è valido 12 ore nel browser che ha effettuato l'accesso. Le API di galleria, upload, video e download verificano il token dell'evento.
 
 Le password vengono salvate come hash scrypt con salt, non in chiaro. Le nuove impostazioni di link sono indipendenti per i tre eventi.
+
+
+## Vercel Hobby: limite Serverless Functions
+
+Per restare entro il limite di 12 Serverless Functions del piano Hobby, gli endpoint dell'area organizzatore sono instradati da `api/admin/[action].js`; le implementazioni sono in `server/handlers/`, fuori dalla cartella `api/`. Gli URL esistenti (`/api/admin/photos`, `/api/admin/review`, `/api/admin/event-links`, `/api/admin/event-passwords`, `/api/admin/moderate`, `/api/admin/bulk-delete`) restano invariati. Non cancellare o spostare nuovamente questi file separatamente senza aggiornare il router.
