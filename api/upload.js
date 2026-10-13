@@ -35,8 +35,8 @@ export default async function handler(req, res) {
     if (!ext) return json(res, 415, { error: "Formato non supportato. Usa JPG, PNG, WebP o HEIC." });
 
     const supabase = supabaseAdmin();
-    const { data: linkSetting, error: linkSettingError } = await supabase.from("app_settings").select("value").eq("key", "event_links").maybeSingle();
-    if (!linkSettingError && linkSetting?.value?.[eventName] === false) return json(res, 403, { error: "Questo album al momento non è disponibile." });
+    const { data: linkSetting, error: linkSettingError } = await supabase.from("app_settings").select("value").eq("key", `event_link_${eventName.toLowerCase()}`).maybeSingle();
+    if (!linkSettingError && linkSetting && linkSetting.value === false) return json(res, 403, { error: "Questo album al momento non è disponibile." });
     // If the setting table is not migrated yet, preserve the safe current default: review enabled.
     let reviewEnabled = true;
     const { data: reviewSetting, error: reviewSettingError } = await supabase.from("app_settings").select("value").eq("key", "review_enabled").maybeSingle();

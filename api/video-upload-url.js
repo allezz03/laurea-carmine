@@ -11,8 +11,8 @@ export default async function handler(req, res) {
   if (!Number.isFinite(size) || size <= 0 || size > MAX_BYTES) return json(res, 413, { error: "Il video deve pesare al massimo 50 MB." });
   try {
     const supabase = supabaseAdmin();
-    const { data: linkSetting, error: linkSettingError } = await supabase.from("app_settings").select("value").eq("key", "event_links").maybeSingle();
-    if (!linkSettingError && linkSetting?.value?.[event] === false) return json(res, 403, { error: "Questo album al momento non è disponibile." });
+    const { data: linkSetting, error: linkSettingError } = await supabase.from("app_settings").select("value").eq("key", `event_link_${event.toLowerCase()}`).maybeSingle();
+    if (!linkSettingError && linkSetting && linkSetting.value === false) return json(res, 403, { error: "Questo album al momento non è disponibile." });
     let reviewEnabled = true;
     const { data: setting, error: settingError } = await supabase.from("app_settings").select("value").eq("key", "review_enabled").maybeSingle();
     if (!settingError && setting) reviewEnabled = setting.value !== false;

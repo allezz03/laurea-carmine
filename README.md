@@ -99,4 +99,4 @@ Nota: il limite di 50 MiB è compatibile con il massimo del piano Supabase Free,
 
 
 ## Impostazioni link Cena e Festa
-Nell'area `/organizzatore`, dopo l'accesso, puoi abilitare o disabilitare separatamente i link Cena e Festa. Le impostazioni vengono salvate nella tabella `app_settings` già usata per la revisione; non serve una nuova migrazione se la migrazione della revisione è stata eseguita. I link disabilitati vengono nascosti dalla pagina iniziale e l'accesso diretto all'album/caricamento viene bloccato.
+Nell'area `/organizzatore`, dopo l'accesso, puoi abilitare o disabilitare separatamente i link Cena e Festa. Le impostazioni vengono salvate come righe boolean separate (`event_link_cena` e `event_link_festa`) nella tabella `app_settings` già usata per la revisione; non serve una nuova migrazione se la migrazione della revisione è stata eseguita. I link disabilitati vengono nascosti dalla pagina iniziale e l'accesso diretto all'album/caricamento viene bloccato.

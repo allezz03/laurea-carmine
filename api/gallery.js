@@ -6,8 +6,8 @@ export default async function handler(req, res) {
     const eventName = req.query?.event;
     if (!["Cena", "Festa"].includes(eventName)) return json(res, 400, { error: "Seleziona un album valido." });
     const supabase = supabaseAdmin();
-    const { data: linkSetting, error: linkSettingError } = await supabase.from("app_settings").select("value").eq("key", "event_links").maybeSingle();
-    if (!linkSettingError && linkSetting?.value?.[eventName] === false) return json(res, 403, { error: "Questo album al momento non è disponibile." });
+    const { data: linkSetting, error: linkSettingError } = await supabase.from("app_settings").select("value").eq("key", `event_link_${eventName.toLowerCase()}`).maybeSingle();
+    if (!linkSettingError && linkSetting && linkSetting.value === false) return json(res, 403, { error: "Questo album al momento non è disponibile." });
     const { data, error } = await supabase.from("photos").select("id, storage_path, created_at, event, caption, media_type, mime_type, size_bytes").eq("status", "approved").eq("event", eventName).order("created_at", { ascending: false }).limit(300);
     if (error) throw error;
     const photos = await Promise.all((data || []).map(async photo => {
