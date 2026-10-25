@@ -107,3 +107,27 @@
 @media (max-width: 600px) { .password-row { align-items: stretch; } .password-row > div, .password-row input, .password-row button { width: 100%; } }
 
 .notification-optin{display:inline-flex;align-items:center;justify-content:center;gap:9px;margin-top:18px;padding:12px 17px;border:1px solid #dfc58d;border-radius:6px;background:#fff8eb;color:#651d32;font-weight:700;font-size:12px;cursor:pointer}.notification-optin:disabled{opacity:.7;cursor:default}.push-setting{margin-top:14px;border-left:4px solid #c5a365}.push-setting button{white-space:nowrap;flex-shrink:0}@media(max-width:520px){.push-setting{align-items:stretch;flex-direction:column}.push-setting button{width:100%}}
+
+/* Centro notifiche personalizzate */
+.custom-notifications{margin:24px 0;padding:20px;background:#f8f1e9;border:1px solid var(--line);border-radius:9px;display:grid;gap:10px}.custom-notifications h2{margin:0;color:var(--wine);font:500 24px 'Playfair Display',serif}.custom-notifications label,.guest-notification-name label{font-size:12px;font-weight:700;color:var(--wine);margin-top:4px}.custom-notifications input,.custom-notifications textarea,.custom-notifications select,.guest-notification-name input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #d9c7bd;border-radius:6px;background:#fffdf9;color:var(--ink);font:13px 'DM Sans',sans-serif}.custom-notifications textarea{min-height:90px;resize:vertical}.notification-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}.notification-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px}.guest-notification-name{width:min(100%,360px);margin:18px auto 0;display:grid;gap:8px;text-align:left}.guest-notification-name input{background:#fffaf3}
+@media(max-width:520px){.custom-notifications{padding:14px}.notification-actions{flex-direction:column}.notification-actions button{width:100%}}
+
+
+/* Popup guida installazione su schermata Home */
+.install-help-backdrop{position:fixed;z-index:100;inset:0;background:rgba(28,9,17,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto}
+.install-help-card{position:relative;width:min(100%,470px);max-height:min(92vh,800px);overflow-y:auto;background:#fffaf3;border:1px solid #e3d0b1;border-radius:16px;padding:30px 28px 24px;box-shadow:0 24px 80px #16050c66;color:var(--ink);animation:install-help-in .22s ease-out}
+.install-help-close{position:absolute;right:14px;top:14px;width:36px;height:36px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--wine);cursor:pointer}
+.install-help-icon{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:#f0e3cf;color:var(--wine);margin-bottom:18px}
+.install-help-card h2{font:500 clamp(27px,5vw,34px)/1.15 'Playfair Display',serif;margin:10px 0 10px;color:var(--wine)}
+.install-help-intro{font-size:13px;line-height:1.65;color:var(--muted);margin:0 0 20px}
+.install-help-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;background:#f0e6dc;padding:5px;border-radius:8px;margin-bottom:18px}
+.install-help-tabs button{border:0;border-radius:6px;background:transparent;padding:10px 8px;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
+.install-help-tabs button.active{background:#fffaf3;color:var(--wine);box-shadow:0 2px 8px #4c1a2512}
+.install-help-steps{display:grid;gap:14px;list-style:none;padding:0;margin:0 0 22px}
+.install-help-steps li{display:grid;grid-template-columns:36px 1fr;gap:11px;align-items:start;font-size:12px;line-height:1.65;color:var(--muted)}
+.install-help-steps li b{color:var(--wine)}
+.install-step-icon{width:34px;height:34px;border-radius:8px;background:#f0e3cf;color:var(--wine);display:grid;place-items:center}
+.install-help-done{min-height:45px}
+.install-help-later{display:block;margin:13px auto 0}
+@keyframes install-help-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:420px){.install-help-card{padding:25px 19px 20px;border-radius:13px}.install-help-card .eyebrow{font-size:9px;letter-spacing:1.3px}.install-help-steps li{font-size:11px}}

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, Utensils, PartyPopper, Video, Play, GraduationCap, Bell, Send } from "lucide-react";
+import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, Utensils, PartyPopper, Video, Play, GraduationCap, Bell, Send, Smartphone, Share2, PlusSquare } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import "./styles.css";
 
@@ -32,6 +32,31 @@ function App() {
   const [videoBusy, setVideoBusy] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [guestNickname, setGuestNickname] = useState("");
+  const [notificationTitle, setNotificationTitle] = useState("Laurea di Carmine");
+  const [notificationBody, setNotificationBody] = useState("");
+  const [notificationTarget, setNotificationTarget] = useState("all");
+  const [notificationNickname, setNotificationNickname] = useState("");
+  const [notificationSchedule, setNotificationSchedule] = useState("");
+  const [showInstallHelp, setShowInstallHelp] = useState(() => {
+    if (ADMIN_MODE) return false;
+    try { return localStorage.getItem("laurea-install-help-dismissed") !== "1"; }
+    catch { return true; }
+  });
+  const [installHelpDevice, setInstallHelpDevice] = useState(() => {
+    const ua = navigator.userAgent || "";
+    if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
+    if (/Android/i.test(ua)) return "android";
+    return "other";
+  });
+
+  function closeInstallHelp(remember = false) {
+    setShowInstallHelp(false);
+    if (remember) {
+      try { localStorage.setItem("laurea-install-help-dismissed", "1"); } catch {}
+    }
+  }
+
 
   function urlBase64ToUint8Array(base64String) {
     const padding = "=".repeat((4 - base64String.length % 4) % 4);
@@ -42,6 +67,7 @@ function App() {
 
   async function enablePushNotifications() {
     if (pushBusy) return;
+    if (!guestNickname.trim()) { setNotice("Inserisci prima il tuo nome o soprannome per attivare le notifiche."); return; }
     setPushBusy(true);
     try {
       if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
@@ -56,8 +82,9 @@ function App() {
       await navigator.serviceWorker.ready;
       let subscription = await registration.pushManager.getSubscription();
       if (!subscription) subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
+      const nickname = guestNickname.trim().slice(0, 40);
       const response = await fetch("/api/push/subscribe", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: subscription.toJSON() })
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: subscription.toJSON(), nickname })
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Non è stato possibile attivare le notifiche.");
@@ -85,6 +112,25 @@ function App() {
     } catch (error) {
       setNotice(error?.message || "Non è stato possibile inviare la notifica.");
     } finally { setPushBusy(false); }
+  }
+
+  async function submitCustomNotification(schedule = false) {
+    if (pushBusy) return;
+    if (!notificationTitle.trim() || !notificationBody.trim()) { setNotice("Inserisci titolo e messaggio della notifica."); return; }
+    if (notificationTarget === "nickname" && !notificationNickname.trim()) { setNotice("Inserisci il soprannome del destinatario."); return; }
+    if (schedule && !notificationSchedule) { setNotice("Scegli data e ora per programmare la notifica."); return; }
+    setPushBusy(true);
+    try {
+      const endpoint = schedule ? "/api/push/schedule" : "/api/push/send";
+      const payload = { title: notificationTitle.trim(), body: notificationBody.trim(), target: notificationTarget, nickname: notificationNickname.trim(), url: "/" };
+      if (schedule) payload.scheduledAt = new Date(notificationSchedule).toISOString();
+      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", "x-admin-password": adminPassword }, body: JSON.stringify(payload) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Operazione non riuscita.");
+      if (schedule) setNotice(`Notifica programmata per ${new Date(data.notification.scheduled_at).toLocaleString("it-IT")}.`);
+      else setNotice(data.sent > 0 ? `Notifica inviata a ${data.sent} dispositivi${data.failed ? `; errori: ${data.failed}` : ""}.` : "Nessun dispositivo idoneo trovato per questo destinatario.");
+    } catch (error) { setNotice(error?.message || "Non è stato possibile gestire la notifica."); }
+    finally { setPushBusy(false); }
   }
 
   async function loadGallery(eventName = selectedEvent) {
@@ -442,6 +488,15 @@ function App() {
             <div><b>Avviso per gli invitati</b><span>Invia una notifica ai dispositivi che hanno attivato le notifiche dal sito.</span></div>
             <button className="primary" disabled={adminBusy || pushBusy} onClick={sendGameNotification}><Send size={16}/>{pushBusy ? "Invio…" : "Il gioco sta per iniziare"}</button>
           </div>
+          <section className="custom-notifications">
+            <span className="eyebrow">COMUNICAZIONI</span><h2>Centro notifiche</h2><p className="muted">Crea annunci personalizzati e inviali subito oppure programmali. Per l'invio individuale, l'invitato deve aver attivato le notifiche con lo stesso soprannome.</p>
+            <label htmlFor="notificationTitle">Titolo</label><input id="notificationTitle" maxLength={80} value={notificationTitle} onChange={e => setNotificationTitle(e.target.value)} placeholder="Es. È il momento della foto di gruppo" />
+            <label htmlFor="notificationBody">Messaggio</label><textarea id="notificationBody" maxLength={180} value={notificationBody} onChange={e => setNotificationBody(e.target.value)} placeholder="Scrivi il messaggio da inviare agli invitati" />
+            <label htmlFor="notificationTarget">Destinatari</label><select id="notificationTarget" value={notificationTarget} onChange={e => setNotificationTarget(e.target.value)}><option value="all">Tutti i dispositivi iscritti</option><option value="nickname">Un invitato specifico</option></select>
+            {notificationTarget === "nickname" && <><label htmlFor="notificationNickname">Nome o soprannome esatto</label><input id="notificationNickname" maxLength={40} value={notificationNickname} onChange={e => setNotificationNickname(e.target.value)} placeholder="Es. Giulia" /></>}
+            <label htmlFor="notificationSchedule">Programma invio (facoltativo)</label><input id="notificationSchedule" type="datetime-local" value={notificationSchedule} onChange={e => setNotificationSchedule(e.target.value)} />
+            <div className="notification-actions"><button className="primary" disabled={pushBusy || adminBusy} onClick={() => submitCustomNotification(false)}><Send size={16}/>{pushBusy ? "Elaborazione…" : "Invia adesso"}</button><button className="secondary" disabled={pushBusy || adminBusy} onClick={() => submitCustomNotification(true)}><Bell size={16}/>Programma invio</button></div>
+          </section>
           <div className="pending-head"><b>{pending.length} foto in attesa di approvazione</b><button className="icon-button" onClick={() => loadPending().catch(e => setNotice(e.message))} aria-label="Aggiorna"><RefreshCw size={17}/></button></div>
           {pending.length === 0 ? <div className="empty"><ShieldCheck size={32}/><b>Tutto aggiornato</b><span>Non ci sono contenuti da approvare.</span></div> :
             <div className="pending-grid">{pending.map(p => <article className="pending-item" key={p.id}>
@@ -477,6 +532,35 @@ function App() {
   }
 
   return <main>
+    {showInstallHelp && <div className="install-help-backdrop" role="dialog" aria-modal="true" aria-labelledby="install-help-title">
+      <section className="install-help-card">
+        <button className="install-help-close" type="button" onClick={() => closeInstallHelp(false)} aria-label="Chiudi guida"><X size={20}/></button>
+        <div className="install-help-icon"><Smartphone size={26}/></div>
+        <span className="eyebrow">UN RICORDO SEMPRE A PORTATA DI MANO</span>
+        <h2 id="install-help-title">Aggiungi la Festa al telefono</h2>
+        <p className="install-help-intro">Puoi mettere questo sito nella schermata Home, come un'app, per ritrovarlo facilmente e ricevere gli avvisi della festa.</p>
+        <div className="install-help-tabs" role="tablist" aria-label="Scegli il tuo telefono">
+          <button type="button" role="tab" aria-selected={installHelpDevice === "ios"} className={installHelpDevice === "ios" ? "active" : ""} onClick={() => setInstallHelpDevice("ios")}>iPhone</button>
+          <button type="button" role="tab" aria-selected={installHelpDevice === "android"} className={installHelpDevice === "android" ? "active" : ""} onClick={() => setInstallHelpDevice("android")}>Android</button>
+          <button type="button" role="tab" aria-selected={installHelpDevice === "other"} className={installHelpDevice === "other" ? "active" : ""} onClick={() => setInstallHelpDevice("other")}>Altro</button>
+        </div>
+        {installHelpDevice === "ios" ? <ol className="install-help-steps">
+          <li><span className="install-step-icon"><Share2 size={18}/></span><span>Apri questa pagina in <b>Safari</b> e premi <b>Condividi</b> (il quadrato con la freccia).</span></li>
+          <li><span className="install-step-icon"><PlusSquare size={18}/></span><span>Scorri il menu e scegli <b>Aggiungi alla schermata Home</b>, poi premi <b>Aggiungi</b>.</span></li>
+          <li><span className="install-step-icon"><Smartphone size={18}/></span><span>Apri il sito dalla nuova icona. Per ricevere notifiche push su iPhone, usa iOS 16.4 o successivo e consenti le notifiche quando richiesto.</span></li>
+        </ol> : installHelpDevice === "android" ? <ol className="install-help-steps">
+          <li><span className="install-step-icon"><Share2 size={18}/></span><span>Apri il sito in <b>Chrome</b> e premi il menu <b>⋮</b> in alto.</span></li>
+          <li><span className="install-step-icon"><PlusSquare size={18}/></span><span>Scegli <b>Installa app</b> oppure <b>Aggiungi a schermata Home</b> e conferma.</span></li>
+          <li><span className="install-step-icon"><Bell size={18}/></span><span>Apri il sito dalla nuova icona e attiva le notifiche se vuoi ricevere gli avvisi della festa.</span></li>
+        </ol> : <ol className="install-help-steps">
+          <li><span className="install-step-icon"><Share2 size={18}/></span><span>Apri il menu del browser.</span></li>
+          <li><span className="install-step-icon"><PlusSquare size={18}/></span><span>Scegli <b>Aggiungi alla schermata Home</b> o <b>Installa app</b>, se disponibile.</span></li>
+          <li><span className="install-step-icon"><Bell size={18}/></span><span>Apri il sito dall'icona e consenti le notifiche, se il browser le supporta.</span></li>
+        </ol>}
+        <button type="button" className="primary full install-help-done" onClick={() => closeInstallHelp(true)}>Ho capito</button>
+        <button type="button" className="text-button install-help-later" onClick={() => closeInstallHelp(false)}>Mostramelo un'altra volta</button>
+      </section>
+    </div>}
     <nav className="topbar"><a className="brand" href="/"><span className="brand-mark">C</span><span>LAUREA DI <b>CARMINE</b></span></a><div className="topbar-right"><a className="nav-link organizer-top-link" href="/organizzatore"><LockKeyhole size={15}/> Area organizzatore</a><span className="active-event-pill">Album Festa</span></div></nav>
 
     <section className="hero">
@@ -503,6 +587,7 @@ function App() {
         </label>
       </div>
       <p className="upload-hint"><Camera size={13}/> Scatta una nuova foto, seleziona immagini dalla galleria oppure aggiungi un video fino a 3 minuti.</p><p className="upload-hint"><LockKeyhole size={13}/> {reviewEnabled ? "Le foto vengono pubblicate solo dopo approvazione." : "La revisione è disattivata: le foto saranno pubblicate subito."}</p>
+      <div className="guest-notification-name"><label htmlFor="guestNickname">Il tuo nome o soprannome</label><input id="guestNickname" maxLength={40} value={guestNickname} onChange={e => setGuestNickname(e.target.value)} placeholder="Es. Giulia" /></div>
       <button type="button" className="notification-optin" onClick={enablePushNotifications} disabled={pushBusy || pushEnabled}><Bell size={16}/>{pushBusy ? "Attivazione…" : pushEnabled ? "Notifiche attivate" : "Avvisami quando iniziano i giochi"}</button>
       {notice && <div className="notice hero-notice" role="status">{notice}</div>}
       <a href="#album" className="scroll-link">SCOPRI L'ALBUM <span>↓</span></a>
