@@ -105,3 +105,5 @@
 .password-row input { flex: 1 1 220px; }
 .password-row button { flex: 0 0 auto; }
 @media (max-width: 600px) { .password-row { align-items: stretch; } .password-row > div, .password-row input, .password-row button { width: 100%; } }
+
+.notification-optin{display:inline-flex;align-items:center;justify-content:center;gap:9px;margin-top:18px;padding:12px 17px;border:1px solid #dfc58d;border-radius:6px;background:#fff8eb;color:#651d32;font-weight:700;font-size:12px;cursor:pointer}.notification-optin:disabled{opacity:.7;cursor:default}.push-setting{margin-top:14px;border-left:4px solid #c5a365}.push-setting button{white-space:nowrap;flex-shrink:0}@media(max-width:520px){.push-setting{align-items:stretch;flex-direction:column}.push-setting button{width:100%}}

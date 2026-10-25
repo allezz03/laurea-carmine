@@ -104,3 +104,17 @@ Nota: il limite di 50 MiB è compatibile con il massimo del piano Supabase Free,
 ## Vercel Hobby: limite Serverless Functions
 
 Per restare entro il limite di 12 Serverless Functions del piano Hobby, gli endpoint dell'area organizzatore sono instradati da `api/admin/[action].js`; le implementazioni sono in `server/handlers/`, fuori dalla cartella `api/`. Gli URL esistenti (`/api/admin/photos`, `/api/admin/review`, `/api/admin/event-links`, `/api/admin/event-passwords`, `/api/admin/moderate`, `/api/admin/bulk-delete`) restano invariati. Non cancellare o spostare nuovamente questi file separatamente senza aggiornare il router.
+
+
+## Notifiche push: avviso di inizio giochi
+
+La funzione usa Web Push. La sola scansione del QR non iscrive automaticamente un invitato: ogni persona deve premere **Avvisami quando iniziano i giochi** e consentire le notifiche. Su iPhone/iPad, per le notifiche web push è necessario iOS/iPadOS 16.4 o successivo e aggiungere il sito alla schermata Home prima di attivare le notifiche. Il browser deve supportare Push API e service worker.
+
+### Configurazione una tantum
+1. In Supabase SQL Editor, esegui `supabase_migration_push_notifications.sql`.
+2. Nel progetto, esegui `npm install` per installare la dipendenza `web-push`.
+3. Genera una coppia di chiavi VAPID localmente con `npx web-push generate-vapid-keys`. Non condividere la chiave privata.
+4. In Vercel > Settings > Environment Variables aggiungi: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (ad esempio `mailto:contatto@example.com`) e `VITE_VAPID_PUBLIC_KEY` (lo stesso valore della chiave pubblica). Sostituisci l'indirizzo di esempio con un contatto valido.
+5. Fai un nuovo deploy dopo aver salvato le variabili.
+
+Gli invitati attivano le notifiche dal sito. Nell'area `/organizzatore`, dopo aver effettuato l'accesso, il pulsante **Il gioco sta per iniziare** invia l'avviso a tutte le sottoscrizioni attive. I dispositivi non più validi vengono rimossi automaticamente. Non è possibile notificare chi non ha dato il consenso o chi ha bloccato le notifiche.

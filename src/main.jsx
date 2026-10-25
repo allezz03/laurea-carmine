@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, Utensils, PartyPopper, Video, Play, GraduationCap } from "lucide-react";
+import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, Utensils, PartyPopper, Video, Play, GraduationCap, Bell, Send } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import "./styles.css";
 
@@ -30,6 +30,62 @@ function App() {
   const [videoDraft, setVideoDraft] = useState(null);
   const [videoCaption, setVideoCaption] = useState("");
   const [videoBusy, setVideoBusy] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const raw = window.atob(base64);
+    return Uint8Array.from([...raw].map(char => char.charCodeAt(0)));
+  }
+
+  async function enablePushNotifications() {
+    if (pushBusy) return;
+    setPushBusy(true);
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+        throw new Error("Questo browser non supporta le notifiche. Prova con un browser aggiornato.");
+      }
+      const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+      if (!publicKey) throw new Error("Le notifiche non sono ancora configurate dall'organizzatore.");
+      if (Notification.permission === "denied") throw new Error("Le notifiche sono bloccate nelle impostazioni del browser. Riattivale da lì e riprova.");
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") throw new Error("Per ricevere l'avviso devi consentire le notifiche.");
+      const registration = await navigator.serviceWorker.register("/service-worker.js");
+      await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
+      const response = await fetch("/api/push/subscribe", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: subscription.toJSON() })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Non è stato possibile attivare le notifiche.");
+      setPushEnabled(true);
+      setNotice("Perfetto! Riceverai una notifica quando il gioco sta per iniziare.");
+    } catch (error) {
+      setNotice(error?.message || "Non è stato possibile attivare le notifiche.");
+    } finally { setPushBusy(false); }
+  }
+
+  async function sendGameNotification() {
+    if (pushBusy) return;
+    if (!window.confirm("Inviare a tutti i dispositivi iscritti la notifica ‘Il gioco sta per iniziare’?")) return;
+    setPushBusy(true);
+    try {
+      const response = await fetch("/api/push/send", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-admin-password": adminPassword },
+        body: JSON.stringify({ title: "Laurea di Carmine", body: "Il gioco sta per iniziare", url: "/" })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Non è stato possibile inviare la notifica.");
+      setNotice(data.sent > 0
+        ? `Notifica inviata a ${data.sent} ${data.sent === 1 ? "dispositivo" : "dispositivi"}${data.removed ? ` (${data.removed} iscrizioni non più valide rimosse)` : ""}.`
+        : "Non ci sono ancora dispositivi iscritti alle notifiche. Chiedi agli invitati di attivarle dal sito.");
+    } catch (error) {
+      setNotice(error?.message || "Non è stato possibile inviare la notifica.");
+    } finally { setPushBusy(false); }
+  }
 
   async function loadGallery(eventName = selectedEvent) {
     if (!eventName) { setPhotos([]); return; }
@@ -382,6 +438,10 @@ function App() {
             <div><b>Revisione foto: {reviewEnabled ? "ATTIVA" : "DISATTIVATA"}</b><span>{reviewEnabled ? "Le nuove foto aspettano la tua approvazione." : "Le nuove foto vengono pubblicate subito."}</span></div>
             <button className={reviewEnabled ? "secondary" : "primary"} disabled={adminBusy} onClick={toggleReview}>{reviewEnabled ? "Disattiva revisione" : "Attiva revisione"}</button>
           </div>
+          <div className="review-setting push-setting">
+            <div><b>Avviso per gli invitati</b><span>Invia una notifica ai dispositivi che hanno attivato le notifiche dal sito.</span></div>
+            <button className="primary" disabled={adminBusy || pushBusy} onClick={sendGameNotification}><Send size={16}/>{pushBusy ? "Invio…" : "Il gioco sta per iniziare"}</button>
+          </div>
           <div className="pending-head"><b>{pending.length} foto in attesa di approvazione</b><button className="icon-button" onClick={() => loadPending().catch(e => setNotice(e.message))} aria-label="Aggiorna"><RefreshCw size={17}/></button></div>
           {pending.length === 0 ? <div className="empty"><ShieldCheck size={32}/><b>Tutto aggiornato</b><span>Non ci sono contenuti da approvare.</span></div> :
             <div className="pending-grid">{pending.map(p => <article className="pending-item" key={p.id}>
@@ -443,6 +503,7 @@ function App() {
         </label>
       </div>
       <p className="upload-hint"><Camera size={13}/> Scatta una nuova foto, seleziona immagini dalla galleria oppure aggiungi un video fino a 3 minuti.</p><p className="upload-hint"><LockKeyhole size={13}/> {reviewEnabled ? "Le foto vengono pubblicate solo dopo approvazione." : "La revisione è disattivata: le foto saranno pubblicate subito."}</p>
+      <button type="button" className="notification-optin" onClick={enablePushNotifications} disabled={pushBusy || pushEnabled}><Bell size={16}/>{pushBusy ? "Attivazione…" : pushEnabled ? "Notifiche attivate" : "Avvisami quando iniziano i giochi"}</button>
       {notice && <div className="notice hero-notice" role="status">{notice}</div>}
       <a href="#album" className="scroll-link">SCOPRI L'ALBUM <span>↓</span></a>
     </section>
