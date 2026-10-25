@@ -1,4 +1,3 @@
-import { requireAlbum } from "./_album-auth.js";
 import { supabaseAdmin, json, methodNotAllowed } from "./_supabase.js";
 
 // Serve la foto approvata come allegato: il download= sull'URL Supabase
@@ -14,10 +13,10 @@ export default async function handler(req, res) {
       .from("photos")
       .select("id, storage_path, event, status")
       .eq("id", id)
+      .eq("event", "Festa")
       .eq("status", "approved")
       .single();
     if (lookupError || !photo) return json(res, 404, { error: "Foto non trovata o non pubblicata." });
-    if (!requireAlbum(req, photo.event)) return json(res, 401, { error: "Inserisci la password per accedere a questo album." });
 
     const { data: file, error: downloadError } = await supabase.storage
       .from("laurea-photos")

@@ -1,4 +1,4 @@
-import { requireAlbum, validEvent } from "./_album-auth.js";
+import { validEvent } from "./_album-auth.js";
 import { supabaseAdmin, json, methodNotAllowed } from "./_supabase.js";
 
 export default async function handler(req, res) {
@@ -6,10 +6,7 @@ export default async function handler(req, res) {
   try {
     const eventName = req.query?.event;
     if (!validEvent(eventName)) return json(res, 400, { error: "Seleziona un album valido." });
-    if (!requireAlbum(req, eventName)) return json(res, 401, { error: "Inserisci la password per accedere a questo album." });
     const supabase = supabaseAdmin();
-    const { data: linkSetting, error: linkSettingError } = await supabase.from("app_settings").select("value").eq("key", `event_link_${eventName.toLowerCase()}`).maybeSingle();
-    if (!linkSettingError && linkSetting && linkSetting.value === false) return json(res, 403, { error: "Questo album al momento non è disponibile." });
     const { data, error } = await supabase.from("photos").select("id, storage_path, created_at, event, caption, media_type, mime_type, size_bytes").eq("status", "approved").eq("event", eventName).order("created_at", { ascending: false }).limit(300);
     if (error) throw error;
     const photos = await Promise.all((data || []).map(async photo => {

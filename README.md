@@ -39,7 +39,7 @@ Per testare le API serverless, usa `vercel dev` dopo aver configurato le variabi
 
 ## Privacy e limiti
 - Il link non richiede login; chiunque abbia il link può inviare foto. Per evitare spam, condividi il QR solo con gli invitati.
-- La password protegge le API di moderazione, ma per un uso pubblico è opportuno usare una password robusta e monitorare i caricamenti.
+- La password organizzatore protegge le API di moderazione. Gli invitati accedono liberamente all'album Festa tramite link o QR code.
 - Le foto caricate restano private nello Storage; URL firmati scadono dopo un'ora.
 - L'API accetta un'immagine per richiesta, max 12 MB. Verifica la compatibilità HEIC sui browser usati dagli invitati.
 - Nessun dato è inviato a un servizio esterno salvo il progetto Supabase configurato.
@@ -52,8 +52,8 @@ Per testare le API serverless, usa `vercel dev` dopo aver configurato le variabi
 - Su iPhone aprire il sito in Safari, toccare Condividi e scegliere **Aggiungi alla schermata Home**. iOS non consente alla pagina web di aprirsi automaticamente nel foglio di condivisione; per questo l'installazione resta un'azione dell'utente.
 
 
-## Album separati Cena e Festa
-Per un database già esistente, eseguire una sola volta `supabase_migration_cena_festa.sql` nel SQL Editor di Supabase. Le foto già presenti vengono assegnate all'album **Festa**; le nuove foto salvano l'evento selezionato. L'area organizzatore consente di eliminare definitivamente foto pubblicate.
+## Album Festa
+Il sito pubblico mostra unicamente l'album **Festa**. Le vecchie foto degli altri eventi non vengono eliminate dal database, ma le pagine Cena e Proclamazione non sono più accessibili dal sito.
 
 
 ## Download foto su smartphone
@@ -98,18 +98,7 @@ I video vengono caricati direttamente su Supabase Storage usando un URL di caric
 Nota: il limite di 50 MiB è compatibile con il massimo del piano Supabase Free, ma il bucket deve avere un limite globale almeno pari a 50 MiB. Per video sopra i 6 MB Supabase raccomanda upload resumable TUS per una maggiore affidabilità su connessioni instabili; questa prima versione usa un upload diretto firmato standard, quindi un'interruzione può richiedere di ripetere il caricamento.
 
 
-## Impostazioni link Cena e Festa
-Nell'area `/organizzatore`, dopo l'accesso, puoi abilitare o disabilitare separatamente i link Cena e Festa. Le impostazioni vengono salvate come righe boolean separate (`event_link_cena` e `event_link_festa`) nella tabella `app_settings` già usata per la revisione; non serve una nuova migrazione se la migrazione della revisione è stata eseguita. I link disabilitati vengono nascosti dalla pagina iniziale e l'accesso diretto all'album/caricamento viene bloccato.
 
-
-## Password per album e nuovo evento Proclamazione
-
-1. Nel progetto Supabase esegui una volta `supabase_migration_password_proclamazione.sql` nel SQL Editor. La migrazione aggiunge il nuovo evento e la tabella privata `album_passwords`; non elimina foto esistenti.
-2. In Vercel aggiungi la variabile d'ambiente `ALBUM_ACCESS_SECRET` con una stringa casuale lunga (almeno 32 caratteri) e ridistribuisci il progetto. Se non viene configurata, l'accesso password non funziona.
-3. Entra in `/organizzatore`, accedi e imposta password diverse (almeno 6 caratteri) per Cena, Festa e Proclamazione.
-4. Il token d'accesso è valido 12 ore nel browser che ha effettuato l'accesso. Le API di galleria, upload, video e download verificano il token dell'evento.
-
-Le password vengono salvate come hash scrypt con salt, non in chiaro. Le nuove impostazioni di link sono indipendenti per i tre eventi.
 
 
 ## Vercel Hobby: limite Serverless Functions

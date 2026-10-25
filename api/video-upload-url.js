@@ -1,4 +1,4 @@
-import { requireAlbum, validEvent } from "./_album-auth.js";
+import { validEvent } from "./_album-auth.js";
 import { randomUUID } from "node:crypto";
 import { supabaseAdmin, json, methodNotAllowed } from "./_supabase.js";
 
@@ -8,13 +8,10 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return methodNotAllowed(res, ["POST"]);
   const { event, mimeType, size, caption } = req.body || {};
   if (!validEvent(event)) return json(res, 400, { error: "Seleziona un album valido." });
-  if (!requireAlbum(req, event)) return json(res, 401, { error: "Inserisci la password per accedere a questo album." });
   if (!VIDEO_TYPES[mimeType]) return json(res, 415, { error: "Formato video non supportato. Usa MP4, MOV o WebM." });
   if (!Number.isFinite(size) || size <= 0 || size > MAX_BYTES) return json(res, 413, { error: "Il video deve pesare al massimo 50 MB." });
   try {
     const supabase = supabaseAdmin();
-    const { data: linkSetting, error: linkSettingError } = await supabase.from("app_settings").select("value").eq("key", `event_link_${event.toLowerCase()}`).maybeSingle();
-    if (!linkSettingError && linkSetting && linkSetting.value === false) return json(res, 403, { error: "Questo album al momento non è disponibile." });
     let reviewEnabled = true;
     const { data: setting, error: settingError } = await supabase.from("app_settings").select("value").eq("key", "review_enabled").maybeSingle();
     if (!settingError && setting) reviewEnabled = setting.value !== false;

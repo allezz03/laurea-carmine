@@ -1,4 +1,4 @@
-import { requireAlbum, validEvent } from "./_album-auth.js";
+import { validEvent } from "./_album-auth.js";
 import Busboy from "busboy";
 import { randomUUID } from "node:crypto";
 import { supabaseAdmin, json, methodNotAllowed } from "./_supabase.js";
@@ -30,15 +30,12 @@ export default async function handler(req, res) {
       bb.on("finish", resolve);
       req.pipe(bb);
     });
-    if (!requireAlbum(req, eventName)) return json(res, 401, { error: "Inserisci la password per accedere a questo album." });
     if (!fileBuffer?.length) return json(res, 400, { error: "Non è stata ricevuta nessuna foto." });
     if (tooLarge || fileBuffer.length > MAX_BYTES) return json(res, 413, { error: "La foto supera il limite di 12 MB." });
     const ext = MIME_EXT[mimeType];
     if (!ext) return json(res, 415, { error: "Formato non supportato. Usa JPG, PNG, WebP o HEIC." });
 
     const supabase = supabaseAdmin();
-    const { data: linkSetting, error: linkSettingError } = await supabase.from("app_settings").select("value").eq("key", `event_link_${eventName.toLowerCase()}`).maybeSingle();
-    if (!linkSettingError && linkSetting && linkSetting.value === false) return json(res, 403, { error: "Questo album al momento non è disponibile." });
     // If the setting table is not migrated yet, preserve the safe current default: review enabled.
     let reviewEnabled = true;
     const { data: reviewSetting, error: reviewSettingError } = await supabase.from("app_settings").select("value").eq("key", "review_enabled").maybeSingle();
