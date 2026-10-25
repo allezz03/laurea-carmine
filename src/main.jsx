@@ -32,7 +32,6 @@ function App() {
   const [videoBusy, setVideoBusy] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
-  const [guestNickname, setGuestNickname] = useState("");
   const [notificationTitle, setNotificationTitle] = useState("Laurea di Carmine");
   const [notificationBody, setNotificationBody] = useState("");
   const [notificationTarget, setNotificationTarget] = useState("all");
@@ -63,36 +62,6 @@ function App() {
     const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
     const raw = window.atob(base64);
     return Uint8Array.from([...raw].map(char => char.charCodeAt(0)));
-  }
-
-  async function enablePushNotifications() {
-    if (pushBusy) return;
-    if (!guestNickname.trim()) { setNotice("Inserisci prima il tuo nome o soprannome per attivare le notifiche."); return; }
-    setPushBusy(true);
-    try {
-      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-        throw new Error("Questo browser non supporta le notifiche. Prova con un browser aggiornato.");
-      }
-      const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-      if (!publicKey) throw new Error("Le notifiche non sono ancora configurate dall'organizzatore.");
-      if (Notification.permission === "denied") throw new Error("Le notifiche sono bloccate nelle impostazioni del browser. Riattivale da lì e riprova.");
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") throw new Error("Per ricevere l'avviso devi consentire le notifiche.");
-      const registration = await navigator.serviceWorker.register("/service-worker.js");
-      await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
-      const nickname = guestNickname.trim().slice(0, 40);
-      const response = await fetch("/api/push/subscribe", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription: subscription.toJSON(), nickname })
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Non è stato possibile attivare le notifiche.");
-      setPushEnabled(true);
-      setNotice("Perfetto! Riceverai una notifica quando il gioco sta per iniziare.");
-    } catch (error) {
-      setNotice(error?.message || "Non è stato possibile attivare le notifiche.");
-    } finally { setPushBusy(false); }
   }
 
   async function sendGameNotification() {
@@ -587,8 +556,6 @@ function App() {
         </label>
       </div>
       <p className="upload-hint"><Camera size={13}/> Scatta una nuova foto, seleziona immagini dalla galleria oppure aggiungi un video fino a 3 minuti.</p><p className="upload-hint"><LockKeyhole size={13}/> {reviewEnabled ? "Le foto vengono pubblicate solo dopo approvazione." : "La revisione è disattivata: le foto saranno pubblicate subito."}</p>
-      <div className="guest-notification-name"><label htmlFor="guestNickname">Il tuo nome o soprannome</label><input id="guestNickname" maxLength={40} value={guestNickname} onChange={e => setGuestNickname(e.target.value)} placeholder="Es. Giulia" /></div>
-      <button type="button" className="notification-optin" onClick={enablePushNotifications} disabled={pushBusy || pushEnabled}><Bell size={16}/>{pushBusy ? "Attivazione…" : pushEnabled ? "Notifiche attivate" : "Avvisami quando iniziano i giochi"}</button>
       {notice && <div className="notice hero-notice" role="status">{notice}</div>}
       <a href="#album" className="scroll-link">SCOPRI L'ALBUM <span>↓</span></a>
     </section>

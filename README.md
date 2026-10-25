@@ -118,3 +118,13 @@ La funzione usa Web Push. La sola scansione del QR non iscrive automaticamente u
 5. Fai un nuovo deploy dopo aver salvato le variabili.
 
 Gli invitati attivano le notifiche dal sito. Nell'area `/organizzatore`, dopo aver effettuato l'accesso, il pulsante **Il gioco sta per iniziare** invia l'avviso a tutte le sottoscrizioni attive. I dispositivi non più validi vengono rimossi automaticamente. Non è possibile notificare chi non ha dato il consenso o chi ha bloccato le notifiche.
+
+## Notifiche personalizzate (nuove)
+
+1. Esegui `supabase_migration_custom_notifications.sql` nel SQL Editor di Supabase.
+2. Mantieni le variabili VAPID già configurate. Aggiungi `CRON_SECRET` su Vercel con un valore casuale lungo e segreto.
+3. Pubblica il progetto aggiornato. La configurazione in `vercel.json` pianifica `/api/push/cron` ogni minuto; verifica che il piano Vercel del progetto supporti questa frequenza di cron. Il cron usa `CRON_SECRET` come bearer token.
+4. Gli invitati devono inserire lo stesso soprannome nell'area pubblica prima di attivare le notifiche; per invii individuali il soprannome deve corrispondere a quello usato in fase di iscrizione.
+5. Nell'area organizzatore usa il Centro notifiche per inviare subito o programmare un messaggio. Gli invii programmati richiedono il cron attivo.
+
+Nota: questa versione aggiunge il centro notifiche e la memorizzazione del soprannome per il targeting push. Le missioni fotografiche individuali non sono ancora incluse in questo aggiornamento e vanno implementate e testate separatamente prima di considerare completo il progetto concordato.
