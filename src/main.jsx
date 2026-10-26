@@ -67,7 +67,6 @@ function App() {
 
   async function enablePushNotifications() {
     if (pushBusy) return;
-    if (!guestNickname.trim()) { setNotice("Inserisci prima il tuo nome o soprannome per attivare le notifiche."); return; }
     setPushBusy(true);
     try {
       if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
