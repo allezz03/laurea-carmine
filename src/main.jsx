@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, Utensils, PartyPopper, Video, Play, GraduationCap, Bell, Send, Smartphone, Share2, PlusSquare, FileArchive } from "lucide-react";
+import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, Utensils, PartyPopper, Video, Play, GraduationCap, Bell, Send, Smartphone, Share2, PlusSquare, FileArchive, BookOpen, ArrowLeft, Upload, BellRing, QrCode as QrCodeIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import "./styles.css";
 
 const APP_URL = import.meta.env.VITE_PUBLIC_APP_URL || window.location.origin;
 const ADMIN_MODE = window.location.pathname.replace(/\/$/, "") === "/organizzatore" || new URLSearchParams(window.location.search).get("admin") === "1";
+const TUTORIAL_MODE = new URLSearchParams(window.location.search).get("guida") === "1";
 
 function App() {
   const [photos, setPhotos] = useState([]);
@@ -495,6 +496,29 @@ function App() {
     } finally { setZipBusy(false); }
   }
 
+  if (TUTORIAL_MODE && !ADMIN_MODE) {
+    return <main className="tutorial-shell">
+      <nav className="tutorial-nav"><a className="tutorial-back" href="/"><ArrowLeft size={17}/> Torna alla festa</a><span className="tutorial-brand">LAUREA DI <b>CARMINE</b></span></nav>
+      <header className="tutorial-hero">
+        <div className="tutorial-emblem"><BookOpen size={27}/></div>
+        <span className="tutorial-kicker">UNA PICCOLA GUIDA</span>
+        <h1>Come funziona<br/><em>l'album della festa</em></h1>
+        <p>Condividere i tuoi ricordi è semplice. Ecco tutto quello che puoi fare.</p>
+      </header>
+      <section className="tutorial-content">
+        <article className="tutorial-card"><span className="tutorial-number">01</span><div className="tutorial-card-icon"><Camera size={22}/></div><h2>Scatta o scegli una foto</h2><p>Usa <b>Scatta foto</b> per aprire la fotocamera oppure <b>Galleria</b> per selezionare una o più immagini già presenti sul telefono.</p><small>Puoi aggiungere una breve dedica prima di caricarle. È facoltativa.</small></article>
+        <article className="tutorial-card"><span className="tutorial-number">02</span><div className="tutorial-card-icon"><Video size={22}/></div><h2>Condividi anche un video</h2><p>Con <b>Carica video</b> puoi inviare un filmato della serata.</p><small>Sono accettati video MP4, MOV o WebM, fino a 3 minuti e 50 MB.</small></article>
+        <article className="tutorial-card"><span className="tutorial-number">03</span><div className="tutorial-card-icon"><Images size={22}/></div><h2>Ritrova i ricordi nell'album</h2><p>Le foto e i video approvati appariranno nella galleria condivisa. L'album si aggiorna automaticamente: puoi anche premere <b>Aggiorna</b>.</p><small>Tocca una foto per aprirla e salvarla sul tuo dispositivo.</small></article>
+        <article className="tutorial-card"><span className="tutorial-number">04</span><div className="tutorial-card-icon"><Download size={22}/></div><h2>Scarica le tue foto preferite</h2><p>Nell'album premi <b>Seleziona foto da scaricare</b>, scegli le immagini e poi <b>Prepara foto selezionate</b>. Segui il passaggio successivo per condividerle o salvarle.</p><small>Il salvataggio multiplo può dipendere dal browser e dal dispositivo.</small></article>
+        <article className="tutorial-card"><span className="tutorial-number">05</span><div className="tutorial-card-icon"><BellRing size={22}/></div><h2>Ricevi l'avviso dei giochi</h2><p>Premi <b>Avvisami per i giochi</b> e consenti le notifiche quando il browser te lo chiede. Potrai ricevere l'avviso quando l'organizzatore lo invierà.</p><small>Se le notifiche sono bloccate, riattivale dalle impostazioni del browser.</small></article>
+        <article className="tutorial-card"><span className="tutorial-number">06</span><div className="tutorial-card-icon"><Smartphone size={22}/></div><h2>Aggiungi la pagina alla Home</h2><p>Dal menu Condividi di Safari su iPhone scegli <b>Aggiungi alla schermata Home</b>. Su Android, dal menu di Chrome scegli <b>Installa app</b> o <b>Aggiungi a schermata Home</b>.</p><small>Così ritroverai l'album più facilmente durante la serata.</small></article>
+      </section>
+      <section className="tutorial-note"><QrCodeIcon size={20}/><p><b>Un ultimo consiglio</b><br/>Condividi il QR code con gli amici: potranno aprire direttamente l'album dal proprio telefono.</p></section>
+      <a className="tutorial-cta" href="/">Vai all'album <span>↗</span></a>
+      <footer className="tutorial-footer">Fatto con <Heart size={12} fill="currentColor"/> per Carmine</footer>
+    </main>;
+  }
+
   if (ADMIN_MODE) {
     return <main className="admin-shell">
       <header className="admin-top"><a className="brand" href="/"><span className="brand-mark">C</span><span>LAUREA DI <b>CARMINE</b></span></a><span className="admin-label"><LockKeyhole size={15}/> Area organizzatore</span></header>
@@ -616,6 +640,7 @@ function App() {
         </label>
       </div>
       <button type="button" className="notification-optin notification-optin-refined" onClick={enablePushNotifications} disabled={pushBusy || pushEnabled}><Bell size={17}/>{pushBusy ? "Attivazione…" : pushEnabled ? "Notifiche attivate" : "Avvisami per i giochi"}</button>
+      <a className="home-guide-link" href="/?guida=1"><BookOpen size={15}/> Come funziona l'album</a>
       {notice && <div className="notice hero-notice" role="status">{notice}</div>}
       <a href="#album" className="scroll-link scroll-link-refined"><span className="scroll-chevron">⌄</span>SCOPRI L'ALBUM</a>
     </section>
