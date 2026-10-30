@@ -10,7 +10,7 @@
 @media(max-width:700px){.event-picker{min-height:calc(100vh - 150px);padding:58px 18px 45px}.event-choice-grid{gap:10px;margin-top:25px}.event-choice{padding:22px 10px 19px}.event-choice strong{font-size:25px}.event-choice small{font-size:11px}.topbar-right{gap:8px}.active-event-pill{font-size:10px;padding:6px 8px}.change-event{font-size:10px!important;gap:4px!important}.pending-head{gap:10px}}
 @media(max-width:390px){.event-choice-grid{grid-template-columns:1fr;max-width:300px}.event-choice{padding:18px}.event-picker h1{font-size:39px}}
 
-/* Native share / save-to-Photos action */
+/* Native share / save-to-Photos action gay */ 
 .download-photo{font:inherit;cursor:pointer;border:0;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:9px}
 .save-photo-hint{margin:10px 0 0;color:#f6e7d8;font-size:12px;text-align:center;max-width:min(90vw,420px)}
 
