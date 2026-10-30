@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, Utensils, PartyPopper, Video, Play, GraduationCap, Bell, Send, Smartphone, Share2, PlusSquare } from "lucide-react";
+import { Camera, ImagePlus, Heart, ShieldCheck, Check, X, Download, Share, LockKeyhole, QrCode, RefreshCw, Sparkles, Images, UploadCloud, Trash2, Utensils, PartyPopper, Video, Play, GraduationCap, Bell, Send, Smartphone, Share2, PlusSquare, FileArchive } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import "./styles.css";
 
@@ -18,6 +18,9 @@ function App() {
   const [adminPassword, setAdminPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [adminBusy, setAdminBusy] = useState(false);
+  const [zipBusy, setZipBusy] = useState(false);
+  const [carouselPhotos, setCarouselPhotos] = useState([]);
+  const [carouselIndex, setCarouselIndex] = useState(0);
   const [reviewEnabled, setReviewEnabled] = useState(true);
   const [selected, setSelected] = useState(null);
   const [showQrZoom, setShowQrZoom] = useState(false);
@@ -343,6 +346,18 @@ function App() {
     const timer = setInterval(() => { if (selectedEvent) loadGallery(selectedEvent); }, 15000);
     return () => clearInterval(timer);
   }, [selectedEvent]);
+  useEffect(() => {
+    const images = photos.filter(photo => photo.media_type !== "video" && photo.url);
+    if (!images.length) { setCarouselPhotos([]); setCarouselIndex(0); return; }
+    const shuffled = [...images].sort(() => Math.random() - 0.5);
+    setCarouselPhotos(shuffled);
+    setCarouselIndex(0);
+  }, [photos]);
+  useEffect(() => {
+    if (carouselPhotos.length < 2) return;
+    const timer = setInterval(() => setCarouselIndex(index => (index + 1) % carouselPhotos.length), 4500);
+    return () => clearInterval(timer);
+  }, [carouselPhotos]);
   useEffect(() => { if (ADMIN_MODE && authenticated) loadPending().catch(e => setNotice(e.message)); }, [authenticated]);
 
   function uploadFiles(fileList) {
@@ -469,6 +484,31 @@ function App() {
     finally { setAdminBusy(false); }
   }
 
+  async function downloadAllPhotosZip() {
+    if (zipBusy) return;
+    setZipBusy(true);
+    setNotice("Preparo l'archivio ZIP con tutte le foto approvate…");
+    try {
+      const response = await fetch("/api/admin/download-zip", { headers: { "x-admin-password": adminPassword } });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Non è stato possibile creare l'archivio ZIP.");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "laurea-carmine-foto.zip";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      setNotice("Download dell'archivio ZIP avviato.");
+    } catch (error) {
+      setNotice(error?.message || "Non è stato possibile scaricare le foto.");
+    } finally { setZipBusy(false); }
+  }
+
   if (ADMIN_MODE) {
     return <main className="admin-shell">
       <header className="admin-top"><a className="brand" href="/"><span className="brand-mark">C</span><span>LAUREA DI <b>CARMINE</b></span></a><span className="admin-label"><LockKeyhole size={15}/> Area organizzatore</span></header>
@@ -503,6 +543,12 @@ function App() {
               <div className="photo-event-tag">{p.event}</div>
               <div className="pending-actions"><button className="approve" disabled={adminBusy} onClick={() => moderate(p.id, "approve")}><Check size={16}/> Approva</button><button className="reject" disabled={adminBusy} onClick={() => moderate(p.id, "reject")}><X size={16}/> Rifiuta</button></div>
             </article>)}</div>}
+          <div className="admin-download-all">
+            <div><b>Archivio della festa</b><span>Scarica in un unico ZIP tutte le foto approvate di tutti gli album.</span></div>
+            <button className="primary" disabled={zipBusy || adminBusy || approved.filter(photo => photo.media_type !== "video").length === 0} onClick={downloadAllPhotosZip}>
+              <FileArchive size={17}/>{zipBusy ? "Creo lo ZIP…" : "Scarica tutte le foto"}
+            </button>
+          </div>
           <div className="pending-head published-head"><b>Contenuti già pubblicati ({approved.length})</b></div>
           <p className="muted admin-help">Seleziona una o più foto o video per eliminarli insieme dall'album condiviso.</p>
           {approved.length === 0 ? <div className="empty"><Images size={30}/><b>Nessuna foto pubblicata</b><span>Le foto approvate compariranno qui.</span></div> : <>
@@ -565,7 +611,15 @@ function App() {
     <section className="hero">
       <div className="hero-glow"></div><div className="laurel">✳</div>
       <span className="eyebrow"><Sparkles size={14}/> UNA GIORNATA DA RICORDARE</span>
-      <h1>Laurea di <em>Carmine</em></h1>
+      <div className="hero-title-row">
+        <h1>Laurea di <em>Carmine</em></h1>
+        <div className={`hero-photo-carousel ${carouselPhotos.length ? "has-photos" : ""}`} aria-label="Foto della serata">
+          {carouselPhotos.length > 0 && carouselPhotos.map((photo, index) => (
+            <img key={photo.id} src={photo.url} alt="Un ricordo della festa" className={index === carouselIndex ? "active" : ""}/>
+          ))}
+          {!carouselPhotos.length && <span><Images size={25}/></span>}
+        </div>
+      </div>
       <p className="hero-subtitle">Album Festa · Una serata, mille ricordi.</p>
       <div className="hero-rule"><span></span><Heart size={15} fill="currentColor"/><span></span></div>
       <p className="hero-copy">Scatta, condividi e rivivi i momenti più belli.<br/>{reviewEnabled ? "Carica qui le tue foto: dopo una rapida approvazione, saranno visibili a tutti." : "Carica qui le tue foto: verranno pubblicate subito nell'album condiviso."}</p>

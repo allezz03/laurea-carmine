@@ -2,6 +2,7 @@ import bulkDelete from "../../server/handlers/admin-bulk-delete.js";
 import eventLinks from "../../server/handlers/admin-event-links.js";
 import moderate from "../../server/handlers/admin-moderate.js";
 import photos from "../../server/handlers/admin-photos.js";
+import downloadZip from "../../server/handlers/admin-download-zip.js";
 import review from "../../server/handlers/admin-review.js";
 import { json } from "../_supabase.js";
 
@@ -10,6 +11,7 @@ const handlers = {
   "event-links": eventLinks,
   moderate,
   photos,
+  "download-zip": downloadZip,
   review,
 };
 

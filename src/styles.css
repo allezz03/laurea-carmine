@@ -131,3 +131,29 @@
 .install-help-later{display:block;margin:13px auto 0}
 @keyframes install-help-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:420px){.install-help-card{padding:25px 19px 20px;border-radius:13px}.install-help-card .eyebrow{font-size:9px;letter-spacing:1.3px}.install-help-steps li{font-size:11px}}
+
+
+/* Festa: carosello di ricordi accanto al titolo */
+.hero-title-row{width:min(100%,1050px);display:flex;align-items:center;justify-content:center;gap:clamp(18px,3vw,42px)}
+.hero-title-row h1{margin:23px 0 12px}
+.hero-photo-carousel{position:relative;flex:0 0 154px;width:154px;height:112px;border:1px solid rgba(223,197,141,.72);border-radius:12px;padding:4px;background:rgba(255,247,237,.08);overflow:hidden;box-shadow:0 12px 30px rgba(25,4,14,.24)}
+.hero-photo-carousel img{position:absolute;inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);object-fit:cover;border-radius:8px;opacity:0;transition:opacity .8s ease}
+.hero-photo-carousel img.active{opacity:1}
+.hero-photo-carousel>span{height:100%;display:grid;place-items:center;color:rgba(223,197,141,.8)}
+.admin-download-all{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 18px;margin:18px 0 24px;border:1px solid rgba(197,163,101,.35);border-radius:10px;background:#fffaf4}
+.admin-download-all>div{display:grid;gap:4px}
+.admin-download-all>div b{color:var(--wine)}
+.admin-download-all>div span{font-size:12px;color:var(--muted);line-height:1.45}
+.admin-download-all button{flex-shrink:0}
+@media(max-width:700px){
+  .hero-title-row{gap:12px}
+  .hero-title-row h1{font-size:clamp(35px,8vw,48px);letter-spacing:-1px;text-align:left}
+  .hero-photo-carousel{flex-basis:104px;width:104px;height:82px}
+  .admin-download-all{align-items:stretch;flex-direction:column}
+  .admin-download-all button{width:100%;justify-content:center}
+}
+@media(max-width:390px){
+  .hero-title-row{flex-direction:column;gap:4px}
+  .hero-title-row h1{text-align:center;margin-top:12px}
+  .hero-photo-carousel{width:142px;height:88px;flex-basis:88px}
+}
