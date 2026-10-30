@@ -157,3 +157,34 @@
   .hero-title-row h1{text-align:center;margin-top:12px}
   .hero-photo-carousel{width:142px;height:88px;flex-basis:88px}
 }
+
+
+/* Layout hero a due colonne: contenuto a sinistra e carosello grande a destra */
+.hero{align-items:center;justify-content:center;text-align:center;padding:70px clamp(22px,4vw,64px) 58px}
+.hero-main-layout{position:relative;z-index:1;width:min(100%,1380px);display:grid;grid-template-columns:minmax(0,1fr) minmax(380px,.92fr);align-items:center;gap:clamp(28px,4vw,64px);margin:0 auto}
+.hero-content{min-width:0;display:flex;align-items:center;flex-direction:column;text-align:center}
+.hero-content .laurel{margin-bottom:16px}
+.hero-content>.eyebrow{justify-content:center}
+.hero-content h1{font:500 clamp(42px,5.1vw,72px)/1.12 'Playfair Display',serif;letter-spacing:-1.4px;margin:22px 0 12px}
+.hero-photo-carousel{position:relative;flex:initial;width:100%;height:clamp(330px,38vw,540px);min-width:0;border:1px solid rgba(223,197,141,.72);border-radius:16px;padding:7px;background:rgba(255,247,237,.08);overflow:hidden;box-shadow:0 18px 48px rgba(25,4,14,.3)}
+.hero-photo-carousel img{position:absolute;inset:7px;width:calc(100% - 14px);height:calc(100% - 14px);object-fit:cover;border-radius:10px;opacity:0;transition:opacity .9s ease}
+.hero-photo-carousel img.active{opacity:1}
+.hero-photo-carousel>span{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:rgba(255,247,237,.72)}
+.hero-photo-carousel>span small{font-size:13px}
+@media(max-width:900px){
+ .hero{padding:58px 22px 64px}
+ .hero-main-layout{grid-template-columns:minmax(0,1fr) minmax(270px,.8fr);gap:22px}
+ .hero-photo-carousel{height:340px}
+ .hero-content h1{font-size:clamp(38px,5vw,52px)}
+ .hero-content .upload-options{gap:8px}
+ .hero-content .upload-button{padding:13px 14px;font-size:12px}
+}
+@media(max-width:700px){
+ .hero{padding:52px 18px 68px}
+ .hero-main-layout{grid-template-columns:1fr;gap:26px;width:min(100%,520px)}
+ .hero-content h1{font-size:clamp(39px,9vw,52px);text-align:center}
+ .hero-photo-carousel{width:100%;height:clamp(230px,65vw,360px)}
+ .hero-content .upload-options{width:100%;flex-direction:column}
+ .hero-content .upload-button{width:min(100%,310px)}
+ .hero-content .hero-copy br{display:none}
+}
