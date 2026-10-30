@@ -621,7 +621,7 @@ function App() {
     </section>
 
     <section className="album-section" id="album">
-      <div className="section-heading"><div><span className="eyebrow">I NOSTRI RICORDI</span><h2>La galleria condivisa</h2><p className="muted">I momenti più belli, raccolti in un unico posto.</p></div><span className="photo-count">{photos.length} {photos.length === 1 ? "foto" : "foto"}</span></div>
+      <div className="section-heading"><div><span className="eyebrow">I RICORDI DELLA SERATA</span><h2>Momenti da ricordare</h2></div><span className="photo-count">{photos.length} {photos.length === 1 ? "ricordo" : "ricordi"}</span></div>
       {photos.length ? <>
         <div className="bulk-toolbar">
           {!selectionMode ? <button className="secondary" onClick={() => { setSelectionMode(true); setSelectedPhotoIds([]); }}><Check size={16}/> Seleziona foto da scaricare</button> : <>
@@ -638,7 +638,7 @@ function App() {
         </button>)}</div>
       </> :
         <div className="empty-gallery"><div className="empty-icon"><Images size={30}/></div><h3>Il primo ricordo può essere il tuo</h3><p>Le foto approvate dagli organizzatori appariranno qui durante la festa.</p><button className="text-button" onClick={() => window.scrollTo({top: 0, behavior: "smooth"})}>Carica la prima foto <span>↑</span></button></div>}
-      <div className="gallery-refresh"><span><span className="live-dot"></span> Album aggiornato automaticamente</span><button onClick={loadGallery}><RefreshCw size={14}/> Aggiorna</button></div>
+      <div className="gallery-refresh"><span><span className="live-dot"></span> Ricordi aggiornati automaticamente</span><button onClick={loadGallery}><RefreshCw size={14}/> Aggiorna</button></div>
     </section>
 
     <section className="share-section"><div className="share-card"><div><span className="eyebrow">INVITA I TUOI RICORDI</span><h2>Condividi il momento.</h2><p>Inquadra il QR code per aprire l'album Festa da un altro telefono.</p></div><button type="button" className="qr-frame qr-zoom-trigger" onClick={() => setShowQrZoom(true)} aria-label="Ingrandisci codice QR" title="Clicca per ingrandire il QR code"><QRCodeSVG value={`${APP_URL}/?evento=Festa`} size={130} bgColor="#fffaf3" fgColor="#651d32" level="M" includeMargin/><span className="qr-zoom-label">Clicca per ingrandire</span></button></div></section>
