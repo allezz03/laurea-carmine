@@ -609,43 +609,40 @@ function App() {
     <nav className="topbar"><a className="brand" href="/"><span className="brand-mark">C</span><span>LAUREA DI <b>CARMINE</b></span></a><div className="topbar-right"><a className="nav-link organizer-top-link" href="/organizzatore"><LockKeyhole size={15}/> Area organizzatore</a><span className="active-event-pill">Album Festa</span></div></nav>
 
     <section className="hero">
-      <div className="hero-glow"></div>
-      <div className="hero-main-layout">
-        <div className="hero-content">
-          <div className="laurel">✳</div>
-          <span className="eyebrow"><Sparkles size={14}/> UNA GIORNATA DA RICORDARE</span>
-          <h1>Laurea di <em>Carmine</em></h1>
-          <p className="hero-subtitle">Album Festa · Una serata, mille ricordi.</p>
-          <div className="hero-rule"><span></span><Heart size={15} fill="currentColor"/><span></span></div>
-          <p className="hero-copy">Scatta, condividi e rivivi i momenti più belli.<br/>{reviewEnabled ? "Carica qui le tue foto: dopo una rapida approvazione, saranno visibili a tutti." : "Carica qui le tue foto: verranno pubblicate subito nell'album condiviso."}</p>
-          <div className="upload-options">
-            <label className={`upload-button ${busy ? "is-busy" : ""}`}>
-              {busy ? <RefreshCw className="spin" size={20}/> : <Camera size={20}/>}
-              <span>{busy ? "Caricamento in corso…" : "Scatta una foto"}</span>
-              <input type="file" accept="image/*" capture="environment" disabled={busy} onChange={e => { uploadFiles(e.target.files); e.target.value = ""; }}/>
-            </label>
-            <label className={`upload-button upload-button-secondary ${busy ? "is-busy" : ""}`}>
-              <Images size={20}/>
-              <span>Scegli dalla galleria</span>
-              <input type="file" accept="image/*" multiple disabled={busy} onChange={e => { uploadFiles(e.target.files); e.target.value = ""; }}/>
-            </label>
-            <label className={`upload-button ${videoBusy ? "is-busy" : ""}`}>
-              <Video size={20}/><span>Carica un video</span>
-              <input type="file" accept="video/mp4,video/quicktime,video/webm" capture="environment" disabled={busy || videoBusy} onChange={e => { chooseVideo(e.target.files); e.target.value = ""; }}/>
-            </label>
-          </div>
-          <p className="upload-hint"><Camera size={13}/> Scatta una nuova foto, seleziona immagini dalla galleria oppure aggiungi un video fino a 3 minuti.</p>
-          <p className="upload-hint"><LockKeyhole size={13}/> {reviewEnabled ? "Le foto vengono pubblicate solo dopo approvazione." : "La revisione è disattivata: le foto saranno pubblicate subito."}</p>
-          <button type="button" className="notification-optin" onClick={enablePushNotifications} disabled={pushBusy || pushEnabled}><Bell size={16}/>{pushBusy ? "Attivazione…" : pushEnabled ? "Notifiche attivate" : "Avvisami quando iniziano i giochi"}</button>
-          {notice && <div className="notice hero-notice" role="status">{notice}</div>}
-        </div>
-        <div className={`hero-photo-carousel ${carouselPhotos.length ? "has-photos" : ""}`} aria-label="Foto della serata">
-          {carouselPhotos.length > 0 && carouselPhotos.map((photo, index) => (
-            <img key={photo.id} src={photo.url} alt="Un ricordo della festa" className={index === carouselIndex ? "active" : ""}/>
-          ))}
-          {!carouselPhotos.length && <span><Images size={42}/> <small>Le foto della serata appariranno qui</small></span>}
-        </div>
+      <div className="hero-glow"></div><div className="laurel">✳</div>
+      <span className="eyebrow"><Sparkles size={14}/> UNA GIORNATA DA RICORDARE</span>
+      <div className="hero-title-row">
+        <h1>Laurea di <em>Carmine</em></h1>
       </div>
+      <p className="hero-subtitle">Album Festa · Una serata, mille ricordi.</p>
+      <div className="hero-rule"><span></span><Heart size={15} fill="currentColor"/><span></span></div>
+      <p className="hero-copy">Scatta, condividi e rivivi i momenti più belli.<br/>{reviewEnabled ? "Carica qui le tue foto: dopo una rapida approvazione, saranno visibili a tutti." : "Carica qui le tue foto: verranno pubblicate subito nell'album condiviso."}</p>
+      <div className="upload-options">
+        <label className={`upload-button ${busy ? "is-busy" : ""}`}>
+          {busy ? <RefreshCw className="spin" size={20}/> : <Camera size={20}/>}
+          <span>{busy ? "Caricamento in corso…" : "Scatta una foto"}</span>
+          <input type="file" accept="image/*" capture="environment" disabled={busy} onChange={e => { uploadFiles(e.target.files); e.target.value = ""; }}/>
+        </label>
+        <label className={`upload-button upload-button-secondary ${busy ? "is-busy" : ""}`}>
+          <Images size={20}/>
+          <span>Scegli dalla galleria</span>
+          <input type="file" accept="image/*" multiple disabled={busy} onChange={e => { uploadFiles(e.target.files); e.target.value = ""; }}/>
+        </label>
+        <label className={`upload-button ${videoBusy ? "is-busy" : ""}`}>
+          <Video size={20}/><span>Carica un video</span>
+          <input type="file" accept="video/mp4,video/quicktime,video/webm" capture="environment" disabled={busy || videoBusy} onChange={e => { chooseVideo(e.target.files); e.target.value = ""; }}/>
+        </label>
+      </div>
+      <p className="upload-hint"><Camera size={13}/> Scatta una nuova foto, seleziona immagini dalla galleria oppure aggiungi un video fino a 3 minuti.</p><p className="upload-hint"><LockKeyhole size={13}/> {reviewEnabled ? "Le foto vengono pubblicate solo dopo approvazione." : "La revisione è disattivata: le foto saranno pubblicate subito."}</p>
+      <button type="button" className="notification-optin" onClick={enablePushNotifications} disabled={pushBusy || pushEnabled}><Bell size={16}/>{pushBusy ? "Attivazione…" : pushEnabled ? "Notifiche attivate" : "Avvisami quando iniziano i giochi"}</button>
+      <div className={`hero-photo-carousel ${carouselPhotos.length ? "has-photos" : "is-empty"}`} aria-label="Foto della serata">
+        {carouselPhotos.length > 0 && carouselPhotos.map((photo, index) => (
+          <img key={photo.id} src={photo.url} alt="Un ricordo della festa" className={index === carouselIndex ? "active" : ""}/>
+        ))}
+        {!carouselPhotos.length && <span className="carousel-empty-icon"><Images size={30}/><b>I ricordi della serata</b><small>Le foto condivise appariranno qui</small></span>}
+        {carouselPhotos.length > 0 && <div className="carousel-overlay"><span>RICORDI DELLA SERATA</span><small>{carouselIndex + 1} / {carouselPhotos.length}</small></div>}
+      </div>
+      {notice && <div className="notice hero-notice" role="status">{notice}</div>}
       <a href="#album" className="scroll-link">SCOPRI L'ALBUM <span>↓</span></a>
     </section>
 
