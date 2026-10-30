@@ -287,3 +287,30 @@ body{background:var(--cream)}
  .share-card{border-radius:13px}
 }
 @media(max-width:370px){.section-heading h2{font-size:28px}.photo-grid{gap:9px}.polaroid-caption{font-size:10px}}
+
+
+/* Guida invitati: stile coordinato con la homepage bordeaux e oro */
+.home-guide-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin:13px auto 0;padding:10px 17px;border:1px solid rgba(211,177,112,.42);border-radius:999px;color:#f2dfbd;text-decoration:none;font-size:.82rem;letter-spacing:.035em;transition:background .2s,border-color .2s}
+.home-guide-link:hover{background:rgba(211,177,112,.1);border-color:#d3b170}
+.tutorial-shell{min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#76283f 0%,#4b1428 48%,#310d1c 100%);color:#fff8ee;padding:0 20px 42px;font-family:inherit}
+.tutorial-nav{max-width:980px;margin:0 auto;min-height:68px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(211,177,112,.2)}
+.tutorial-back{display:inline-flex;align-items:center;gap:8px;color:#ead7b9;text-decoration:none;font-size:.86rem}
+.tutorial-brand{font-size:.7rem;letter-spacing:.16em;color:#e9d5b4}.tutorial-brand b{color:#fff8ee}
+.tutorial-hero{max-width:760px;margin:0 auto;text-align:center;padding:48px 12px 34px}
+.tutorial-emblem{width:58px;height:58px;border:1px solid #c9a66c;border-radius:50%;display:grid;place-items:center;color:#d9bd8b;margin:0 auto 18px}
+.tutorial-kicker{font-size:.68rem;letter-spacing:.24em;color:#d9bd8b}
+.tutorial-hero h1{font-family:Georgia,serif;font-size:clamp(2.25rem,7vw,4.2rem);font-weight:400;line-height:1.08;margin:15px 0;color:#fff8ee}
+.tutorial-hero h1 em{font-weight:400;color:#e0c18b}
+.tutorial-hero p{color:#e2d1c5;max-width:490px;margin:14px auto 0;line-height:1.65;font-size:.96rem}
+.tutorial-content{max-width:980px;margin:0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.tutorial-card{position:relative;background:rgba(255,249,239,.97);color:#482032;border:1px solid rgba(211,177,112,.65);border-radius:16px;padding:24px 23px 22px;min-height:210px;box-shadow:0 12px 30px rgba(20,4,12,.13)}
+.tutorial-number{position:absolute;right:20px;top:17px;color:#b99a69;font-family:Georgia,serif;font-size:1rem}
+.tutorial-card-icon{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#f1e7d8;color:#752b43;margin-bottom:15px}
+.tutorial-card h2{font-family:Georgia,serif;font-weight:500;font-size:1.28rem;margin:0 0 9px;color:#572039}
+.tutorial-card p{font-size:.9rem;line-height:1.58;margin:0;color:#634b50}
+.tutorial-card small{display:block;margin-top:11px;padding-top:10px;border-top:1px solid #eadfce;color:#8a6b60;line-height:1.5;font-size:.78rem}
+.tutorial-note{max-width:980px;margin:18px auto 0;border:1px solid rgba(211,177,112,.42);border-radius:14px;padding:17px 20px;display:flex;align-items:center;gap:14px;color:#e4c995;background:rgba(255,255,255,.045)}
+.tutorial-note p{margin:0;color:#eadbca;font-size:.86rem;line-height:1.55}.tutorial-note b{color:#e4c995}
+.tutorial-cta{display:flex;align-items:center;justify-content:center;gap:12px;max-width:260px;margin:24px auto 0;padding:14px 20px;border-radius:999px;background:linear-gradient(135deg,#e4c995,#bd965b);color:#421528;text-decoration:none;font-weight:650;font-size:.9rem;box-shadow:0 8px 22px rgba(0,0,0,.16)}
+.tutorial-footer{display:flex;align-items:center;justify-content:center;gap:5px;margin:30px auto 0;color:#c9ad91;font-size:.76rem;letter-spacing:.04em}.tutorial-footer svg{color:#d7ad83}
+@media(max-width:640px){.tutorial-shell{padding:0 15px 32px}.tutorial-nav{min-height:58px}.tutorial-brand{font-size:.59rem}.tutorial-hero{padding:35px 5px 26px}.tutorial-hero p{font-size:.9rem}.tutorial-content{grid-template-columns:1fr;gap:11px}.tutorial-card{min-height:0;padding:20px 19px}.tutorial-card-icon{width:38px;height:38px;margin-bottom:12px}.tutorial-card h2{font-size:1.2rem}.tutorial-card p{font-size:.88rem}.tutorial-note{padding:15px;align-items:flex-start}}
